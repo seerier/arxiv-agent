@@ -228,7 +228,7 @@ class PapersScreen(Screen):
         border-top: solid #2D3147;
         padding: 0 2;
         height: 2;
-        color: dim;
+        color: #6B7280;
         content-align: left middle;
     }
     """

@@ -192,7 +192,7 @@ class DashboardScreen(Screen):
             title = _truncate(paper.title, 48)
             breakthrough = " [bold #F5A623]★[/bold #F5A623]" if paper.is_breakthrough else ""
             markup = f"{bar}  {title}{breakthrough}"
-            lv.append(ListItem(Static(markup), id=f"paper-{paper.id[:16]}"))
+            lv.append(ListItem(Static(markup)))
 
     def _populate_directions(self, directions: List[Direction]) -> None:
         content_widget = self.query_one("#dirs-content", Static)

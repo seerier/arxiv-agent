@@ -508,6 +508,18 @@ def direction(name: str, open_browser: bool, refresh: bool, no_live: bool, arxiv
             )
         )
 
+    if d.career_score > 0 or d.career_reasoning:
+        career_colour = _score_colour(d.career_score)
+        career_bar = _score_bar(d.career_score)
+        career_header = Text()
+        career_header.append(f"Career Score: {d.career_score:.1f}/10 ", style=career_colour)
+        career_header.append(career_bar, style="green")
+        if d.career_reasoning:
+            career_header.append(f"\n\n{d.career_reasoning}", style="default")
+        if d.top_employers:
+            career_header.append("\n\n[dim]Top employers:[/dim] " + ", ".join(d.top_employers), style="default")
+        console.print(Panel(career_header, title="[bold]Career & Salary Outlook[/bold]", border_style="dim yellow"))
+
     if d.open_problems:
         problems_text = "\n".join(f"  [cyan]▸[/cyan] {p}" for p in d.open_problems)
         console.print(Panel(problems_text, title="[bold]Open Problems[/bold]", border_style="dim yellow"))
@@ -782,8 +794,10 @@ def ask(question: str, open_browser: bool, no_live: bool, arxiv_results: int):
         "You are an expert AI research analyst. Answer the question comprehensively "
         "using the provided papers as evidence. Structure your answer with clear sections "
         "using markdown headings (## for major sections, ### for sub-sections). "
-        "Cite papers by [Author et al., YEAR] format referencing the numbered list. "
-        "Also draw on your own training knowledge for historical context. "
+        "Cite papers ONLY by their number from the provided list, e.g. [1], [3], [7]. "
+        "Do NOT invent paper titles, author names, or citations not in the provided list. "
+        "You may explain concepts and background from your training knowledge, but do NOT "
+        "fabricate specific paper references — only cite numbered papers from the list. "
         "Be thorough, deep, and precise. Conclude with open research questions."
     )
     user_prompt = (
@@ -975,10 +989,12 @@ def survey(area: str, open_browser: bool, arxiv_results: int, no_live: bool):
         "## Practical Applications\n"
         "## Worthiness Assessment\n\n"
         "Rules:\n"
-        "- Cite papers from the provided list as [Author et al., YEAR]\n"
-        "- Also draw on your own training knowledge for context and history\n"
-        "- Be comprehensive, deep, and technically precise\n"
-        "- Include benchmark results, dataset names, and specific numbers where known\n"
+        "- Cite papers ONLY by their number from the provided list, e.g. [1], [3], [7].\n"
+        "- Do NOT invent, fabricate, or recall paper titles or author names from training data.\n"
+        "- You may explain historical background and concepts from your training knowledge,\n"
+        "  but do NOT attribute them to specific papers unless those papers are in the list.\n"
+        "- Be comprehensive, deep, and technically precise.\n"
+        "- Include benchmark results, dataset names, and specific numbers where they appear in papers.\n"
         "- The Worthiness Assessment should answer: Is this area worth pursuing? "
         "What is the ceiling? What are the open opportunities?"
     )
@@ -987,9 +1003,8 @@ def survey(area: str, open_browser: bool, arxiv_results: int, no_live: bool):
         f"I have fetched {total_papers} papers from arXiv and my local database "
         f"({len(live_for_context)} live from arXiv, {len(local_unique)} locally analyzed).\n\n"
         f"Papers:\n\n{context_block}\n\n"
-        "Please write a thorough, well-structured survey. Use the papers above as primary "
-        "evidence and your training knowledge for historical context and anything not covered "
-        "by the papers."
+        "IMPORTANT: Cite ONLY the numbered papers above. Do not invent paper titles or citations. "
+        "Please write a thorough, well-structured survey."
     )
 
     with console.status("[cyan]Claude is writing the survey…[/cyan]", spinner="dots"):
@@ -1151,23 +1166,24 @@ def recommend(field: str, count: int, no_live: bool, arxiv_results: int, open_br
         novelty = rec.get("novelty", 5)
         opportunity = rec.get("opportunity", 5)
         why = rec.get("why_promising", "")
+        caveats = rec.get("caveats", "")
         angle = rec.get("suggested_angle", "")
         rep_papers = rec.get("representative_papers", [])
 
-        # Opportunity score colour
         opp_colour = _score_colour(opportunity)
+        m_colour = _score_colour(momentum)
+        nv_colour = _score_colour(novelty)
 
-        # Score bar line
         scores_text = Text()
         scores_text.append("  Momentum  ", style="dim")
-        scores_text.append(f"{momentum:2d}/10 ", style="bold cyan")
-        scores_text.append(_score_bar(momentum, width=8), style="cyan")
+        scores_text.append(f"{momentum:2d}/10 ", style=f"bold {m_colour}")
+        scores_text.append(_score_bar(momentum, width=8), style=m_colour)
         scores_text.append("   Novelty  ", style="dim")
-        scores_text.append(f"{novelty:2d}/10 ", style="bold purple")
-        scores_text.append(_score_bar(novelty, width=8), style="purple")
+        scores_text.append(f"{novelty:2d}/10 ", style=f"bold {nv_colour}")
+        scores_text.append(_score_bar(novelty, width=8), style=nv_colour)
         scores_text.append("   Opportunity  ", style="dim")
         scores_text.append(f"{opportunity:2d}/10 ", style=opp_colour)
-        scores_text.append(_score_bar(opportunity, width=8), style="green")
+        scores_text.append(_score_bar(opportunity, width=8), style=opp_colour)
 
         body = Text()
         body.append(f"{topic}\n", style="bold white")
@@ -1175,6 +1191,9 @@ def recommend(field: str, count: int, no_live: bool, arxiv_results: int, open_br
 
         if why:
             body.append(f"\n\n[cyan]Why now:[/cyan] {why}", style="")
+
+        if caveats:
+            body.append(f"\n\n[red]⚠ Caveats:[/red] {caveats}", style="")
 
         if angle:
             body.append(f"\n\n[gold1]Research angle:[/gold1] {angle}", style="")
@@ -1184,10 +1203,11 @@ def recommend(field: str, count: int, no_live: bool, arxiv_results: int, open_br
             for title in rep_papers[:2]:
                 body.append(f"  [dim]▸[/dim] {_truncate(title, 80)}\n", style="dim")
 
+        border = "gold1" if opportunity >= 7 else ("blue" if opportunity >= 4 else "dim")
         console.print(Panel(
             body,
             title=f"[bold]#{i}[/bold]",
-            border_style="blue" if opportunity >= 7 else "dim",
+            border_style=border,
             padding=(1, 2),
         ))
 
@@ -1205,6 +1225,204 @@ def recommend(field: str, count: int, no_live: bool, arxiv_results: int, open_br
                 field_summary=field_summary,
                 recommendations=recommendations,
                 paper_count=len(papers),
+            )
+        console.print(f"[dim]Report saved to:[/dim] [cyan]{html_path}[/cyan]")
+        if open_browser:
+            webbrowser.open(Path(html_path).as_uri())
+    except Exception as exc:
+        console.print(f"[yellow]Warning: HTML report generation failed: {exc}[/yellow]")
+
+    console.print()
+
+
+# ---------------------------------------------------------------------------
+# idea
+# ---------------------------------------------------------------------------
+
+@cli.command()
+@click.argument("field")
+@click.option("-n", "--count", default=6, show_default=True, help="Number of ideas to generate")
+@click.option("--arxiv-results", default=40, show_default=True, help="Max recent arXiv papers to fetch per query")
+@click.option("--open/--no-open", "open_browser", default=True, help="Open HTML report in browser")
+def idea(field: str, count: int, arxiv_results: int, open_browser: bool):
+    """Generate specific, actionable research ideas for FIELD.
+
+    Searches arXiv live for the newest papers, scours the open web for community
+    signals (blog posts, discussions, preprints), then uses Claude to synthesise
+    high-opportunity ideas that are doable NOW.
+
+    Examples:
+
+      arxiv idea "3D gaussian splatting"
+
+      arxiv idea "flow matching" -n 8
+
+      arxiv idea "event-based vision" --arxiv-results 60
+    """
+    from arxiv_agent.fetcher.live_search import (
+        search_arxiv_recent_for_field,
+        search_arxiv_live,
+        search_web_for_field,
+    )
+
+    app = _build_app()
+    knowledge_analyzer = app["knowledge_analyzer"]
+    knowledge_reporter = app["knowledge_reporter"]
+
+    console.print()
+    console.print(Panel(
+        f"[bold cyan]Research Idea Generator[/bold cyan]\n"
+        f"[dim]Field: {field[:100]}{'…' if len(field) > 100 else ''}[/dim]\n"
+        f"[dim]arXiv live search + web signals + Claude synthesis[/dim]",
+        expand=False,
+    ))
+
+    # ── 1. Fetch recent papers (newest-first) ──────────────────────────────
+    live_papers = []
+    with console.status("[cyan]Fetching recent arXiv papers…[/cyan]", spinner="dots"):
+        try:
+            live_papers = search_arxiv_recent_for_field([field], max_per_query=arxiv_results)
+            # Also grab relevance-sorted to catch landmark papers
+            relevance_papers = search_arxiv_live(field, max_results=30)
+            seen_ids = {p.id for p in live_papers}
+            for p in relevance_papers:
+                if p.id not in seen_ids:
+                    live_papers.append(p)
+                    seen_ids.add(p.id)
+        except Exception as exc:
+            console.print(f"[yellow]arXiv fetch error (non-fatal): {exc}[/yellow]")
+
+    if live_papers:
+        years = [p.published_date.year for p in live_papers if p.published_date]
+        year_range = f"{min(years)}–{max(years)}" if years else "?"
+        console.print(
+            f"[dim]arXiv:[/dim] [green]{len(live_papers)} papers[/green] "
+            f"spanning [cyan]{year_range}[/cyan]"
+        )
+    else:
+        console.print("[yellow]No arXiv papers found for this field.[/yellow]")
+
+    # ── 2. Web / social signals ────────────────────────────────────────────
+    web_snippets = []
+    with console.status("[cyan]Scanning the web for community signals…[/cyan]", spinner="dots"):
+        try:
+            web_snippets = search_web_for_field(field, max_results=10)
+        except Exception as exc:
+            console.print(f"[yellow]Web search skipped: {exc}[/yellow]")
+
+    console.print(
+        f"[dim]Web signals:[/dim] [green]{len(web_snippets)} snippets[/green]"
+    )
+
+    if not live_papers and not web_snippets:
+        console.print("[bold yellow]No data found. Try a different field query.[/bold yellow]")
+        return
+
+    # ── 3. Claude synthesis ────────────────────────────────────────────────
+    with console.status(
+        f"[cyan]Claude is generating {count} research ideas…[/cyan]", spinner="dots"
+    ):
+        try:
+            result = knowledge_analyzer.generate_research_ideas(
+                field=field,
+                papers=live_papers,
+                web_snippets=web_snippets,
+                n=count,
+            )
+        except Exception as exc:
+            console.print(f"[bold red]Idea generation failed:[/bold red] {exc}")
+            sys.exit(1)
+
+    field_pulse = result.get("field_pulse", "")
+    trend_summary = result.get("trend_summary", "")
+    ideas = result.get("ideas", [])
+
+    # ── 4. Display ─────────────────────────────────────────────────────────
+    if field_pulse:
+        console.print()
+        console.print(Panel(
+            f"{field_pulse}\n\n[dim italic]{trend_summary}[/dim italic]",
+            title="[bold cyan]⚡ Field Pulse[/bold cyan]",
+            border_style="cyan",
+        ))
+
+    console.print()
+    console.print(f"[bold cyan]💡 {len(ideas)} Research Ideas[/bold cyan]")
+    console.print()
+
+    for i, idea_item in enumerate(ideas, 1):
+        title = idea_item.get("title", "Untitled idea")
+        one_liner = idea_item.get("one_liner", "")
+        feasibility = idea_item.get("feasibility", 5)
+        impact = idea_item.get("impact", 5)
+        novelty = idea_item.get("novelty", 5)
+        horizon = idea_item.get("time_horizon", "")
+        why_now = idea_item.get("why_now", "")
+        approach = idea_item.get("approach", "")
+        challenge = idea_item.get("key_challenge", "")
+        risks = idea_item.get("risks", "")
+        build_on = idea_item.get("build_on", [])
+
+        f_colour = _score_colour(feasibility)
+        i_colour = _score_colour(impact)
+        nv_colour = _score_colour(novelty)
+
+        body = Text()
+        body.append(f"{title}\n", style="bold white")
+        if one_liner:
+            body.append(f"{one_liner}\n", style="italic dim")
+
+        scores = Text()
+        scores.append("  Feasibility  ", style="dim")
+        scores.append(f"{feasibility:2d}/10 ", style=f"bold {f_colour}")
+        scores.append(_score_bar(feasibility, width=8), style=f_colour)
+        scores.append("   Impact  ", style="dim")
+        scores.append(f"{impact:2d}/10 ", style=f"bold {i_colour}")
+        scores.append(_score_bar(impact, width=8), style=i_colour)
+        scores.append("   Novelty  ", style="dim")
+        scores.append(f"{novelty:2d}/10 ", style=f"bold {nv_colour}")
+        scores.append(_score_bar(novelty, width=8), style=nv_colour)
+        body.append_text(scores)
+
+        if horizon:
+            body.append(f"\n  ⏱ {horizon}", style="dim")
+        if why_now:
+            body.append(f"\n\n[cyan]Why now:[/cyan] {why_now}")
+        if approach:
+            body.append(f"\n\n[gold1]Approach:[/gold1] {approach}")
+        if challenge:
+            body.append(f"\n\n[red]Key challenge:[/red] {challenge}")
+        if risks:
+            body.append(f"\n\n[red]⚠ Risks:[/red] {risks}")
+        if build_on:
+            body.append("\n\n[dim]Build on:[/dim] ")
+            body.append(", ".join(build_on[:3]), style="dim")
+
+        total = feasibility + impact
+        border = "gold1" if total >= 17 else ("blue" if total >= 14 else "dim")
+        console.print(Panel(
+            body,
+            title=f"[bold]#{i}[/bold]",
+            border_style=border,
+            padding=(1, 2),
+        ))
+
+    console.print()
+    console.print(
+        f"[dim]Based on {len(live_papers)} arXiv papers + {len(web_snippets)} web signals · "
+        f"Use [cyan]arxiv direction \"<topic>\"[/cyan] to dive deeper.[/dim]"
+    )
+
+    # ── 5. HTML report ──────────────────────────────────────────────────────
+    try:
+        with console.status("[cyan]Generating HTML report…[/cyan]", spinner="dots"):
+            html_path = knowledge_reporter.generate_idea_report(
+                field=field,
+                field_pulse=field_pulse,
+                trend_summary=trend_summary,
+                ideas=ideas,
+                paper_count=len(live_papers),
+                web_count=len(web_snippets),
             )
         console.print(f"[dim]Report saved to:[/dim] [cyan]{html_path}[/cyan]")
         if open_browser:

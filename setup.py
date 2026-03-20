@@ -29,6 +29,7 @@ setup(
         "pyyaml>=6.0",
         "python-dateutil>=2.8.0",
         "markdown>=3.5",
+        "ddgs>=0.1",
     ],
     extras_require={
         "semantic-search": [
@@ -52,6 +53,7 @@ setup(
             "python-multipart>=0.0.9",
             "textual>=0.50.0",
             "apscheduler>=3.10.0",
+            "ddgs>=0.1",
         ],
     },
     entry_points={

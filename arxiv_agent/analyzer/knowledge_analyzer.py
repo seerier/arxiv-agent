@@ -55,31 +55,57 @@ key contributions, and institutional affiliation if known.
 research_focus: 3–5 specific research topics/methods they are known for.
 directions: 1–4 high-level research directions (field-level tags).
 rating: integer 1–10 overall researcher impact/influence score.
-  1–3: Limited impact, narrow or declining research, few citations.
-  4–6: Solid researcher, moderate impact, reasonable publication record.
-  7–8: Strong researcher, high impact, notable contributions, influential papers.
-  9–10: Exceptional — field-defining work, thousands of citations, top-tier venues.
-rating_reasoning: A paragraph justifying the rating — cover citation impact, \
-originality of contributions, influence on the field, publication venues, \
-and whether this is someone worth following or collaborating with.
+  1–3: PhD student / early-career or niche researcher with limited outside impact.
+  4–6: Solid researcher — publishes at good venues, moderate citation impact, known in subfield.
+  7–8: Strong researcher — multiple high-impact papers, frequently cited, influences the field.
+  9–10: Exceptional — field-defining contributions (Turing, NeurIPS Best Paper, 10k+ citations etc.)
+
+WEIGHTING — you MUST follow this:
+- Give HEAVY weight to HISTORICAL representative works (their most-cited, most-influential papers \
+ever), not just recent activity. A researcher who wrote foundational papers years ago but is less \
+active now can still rate 7–8.
+- Do NOT rate purely on recency. Recent papers should count for roughly 30% of the rating; \
+career-defining historical works count for 70%.
+- Use citation counts and h-index heavily if bibliometric data is provided.
+
+CALIBRATION — you MUST follow this:
+- Most researchers are 4–6. Do NOT default to 7+ to sound encouraging.
+- 7–8 should be reserved for truly influential researchers known outside their immediate subfield.
+- 9–10 is for once-in-a-decade contributors only — extremely rare.
+- An unknown researcher with a small paper list should score 2–4, not 6.
+- Be honest: if someone has mediocre citation numbers and no landmark papers, say so.
+
+ANTI-HALLUCINATION — CRITICAL:
+- ONLY reference papers that appear in the provided list. NEVER invent, fabricate, or recall \
+paper titles from your training data. If a paper is not in the list, do not mention it by title.
+- Do not name specific venues, awards, or institutions unless they appear in the provided data.
+- If the paper list is sparse and you cannot reliably assess impact, say so in rating_reasoning \
+rather than filling gaps with assumed knowledge.
+
+rating_reasoning: A paragraph justifying the rating. MUST mention:
+- Specific papers FROM THE PROVIDED LIST that demonstrate impact (cite by title only if listed).
+- Citation counts FROM THE PROVIDED DATA if available.
+- Whether this is someone worth collaborating with or following.
+- If data is insufficient to assess well, state this honestly.
 """
 
 _RECOMMEND_SYSTEM_PROMPT = """\
-You are an expert AI research strategist specializing in identifying high-value \
-research opportunities. Given a snapshot of recent papers in a researcher's field, \
-you identify the most promising specific topics they should explore next.
+You are a blunt, experienced research advisor. Your job is to give an honest ranking \
+of research topics — not to be encouraging. A researcher relies on your candour to \
+avoid wasting years on a crowded or low-ceiling direction.
 
 Return ONLY a valid JSON object with this schema (no markdown, no preamble):
 {
-  "field_summary": "<1-2 sentence overview of what is currently hot in this field>",
+  "field_summary": "<1-2 sentences: honest state of the field — including if it is saturated, dominated by big labs, or past peak>",
   "recommendations": [
     {
-      "topic": "<specific, concrete topic name — not vague, e.g. 'Flow Matching for Video Generation' not just 'video'>",
+      "topic": "<specific, concrete topic name — e.g. 'Flow Matching for Video Generation' not just 'video'>",
       "momentum": <integer 1-10, how fast this topic is growing>,
-      "novelty": <integer 1-10, how unexplored/open it still is>,
-      "opportunity": <integer 1-10, research opportunity score — high = few dominant papers yet>,
-      "why_promising": "<2-3 sentences: what makes this topic timely, what gap exists, why NOW is the right time>",
-      "suggested_angle": "<1 concrete research angle or question the researcher could pursue>",
+      "novelty": <integer 1-10, how much open territory remains>,
+      "opportunity": <integer 1-10, realistic research opportunity for a small team>,
+      "why_promising": "<honest 2-3 sentences: what gap exists and why NOW — but also note if it is already crowded>",
+      "caveats": "<1-2 sentences: what makes this hard, risky, or less attractive — be direct>",
+      "suggested_angle": "<1 concrete angle a small team could realistically pursue>",
       "representative_papers": ["<paper title 1>", "<paper title 2>"]
     }
   ]
@@ -87,12 +113,67 @@ Return ONLY a valid JSON object with this schema (no markdown, no preamble):
 
 Rules:
 - Give exactly the number of recommendations requested.
-- Topics must be SPECIFIC sub-topics, not entire fields (bad: "diffusion models", good: "consistency distillation for real-time inference").
-- momentum: how much recent activity you see (papers per week trend).
-- novelty: how much unexplored territory remains (10 = almost no landmark paper yet).
-- opportunity: sweet spot score — high momentum + high novelty = high opportunity.
-- representative_papers: pick titles that are actually in the provided paper list.
-- Focus on topics where a researcher could realistically make a contribution within 6-18 months.
+- Topics must be SPECIFIC sub-topics, not entire fields.
+- CALIBRATION: opportunity scores must span the realistic range.
+  • 8–10: genuinely open, fast-moving, low competition — rare, at most 1–2 topics.
+  • 5–7: worthwhile but with real headwinds (competition, uncertainty, difficulty).
+  • 1–4: crowded, declining, or dominated by resources a small team cannot match.
+- Do NOT give every topic a high score. If most topics in a field are crowded, say so.
+- momentum: paper volume trend (10 = explosive growth, 1 = stagnant/declining).
+- novelty: unexplored territory (10 = almost no landmark paper, 1 = field is solved).
+- opportunity = realistic chance a small team makes a meaningful contribution.
+- caveats is REQUIRED — always name a real risk or weakness.
+- Rank topics from highest to lowest opportunity.
+- representative_papers: ONLY use EXACT titles from the provided paper list. Do NOT invent,
+  paraphrase, or recall paper titles from training data. If no paper in the list fits, use [].
+"""
+
+_IDEA_SYSTEM_PROMPT = """\
+You are a senior research advisor known for brutal honesty. You do NOT hype ideas \
+to sound exciting. You generate specific, realistic research ideas AND rate them \
+honestly — including their weaknesses.
+
+Return ONLY a valid JSON object (no markdown, no preamble) with this schema:
+{
+  "field_pulse": "<2-3 sentences: honest state of the field — including if it is saturated, moving too fast for small teams, or if big labs dominate>",
+  "trend_summary": "<1-2 sentences: what macro shift is happening and what it means for newcomers>",
+  "ideas": [
+    {
+      "title": "<specific idea title — e.g. 'Efficient Diffusion Sampling via Learned Score Caching' not 'improve diffusion'>",
+      "one_liner": "<one honest sentence: what you do and what realistic impact it has>",
+      "feasibility": <integer 1-10, can a small team (1-2 people, 1 GPU) do this in 6-12 months?>,
+      "impact": <integer 1-10, how much would this move the field if it worked?>,
+      "novelty": <integer 1-10, how unexplored is this specific angle right now?>,
+      "time_horizon": "<'near (1-3 months)' | 'mid (3-9 months)' | 'long (9-18 months)'>",
+      "why_now": "<2-3 sentences: concrete evidence this is the right moment — cite specific recent papers or gaps>",
+      "approach": "<3-5 sentences: concrete technical plan — method, baseline, dataset, metric>",
+      "key_challenge": "<the single hardest obstacle — be specific, not generic>",
+      "risks": "<1-2 sentences: what could make this idea fail or become irrelevant — be honest>",
+      "build_on": ["<paper title or tool 1>", "<paper title or tool 2>"],
+      "novelty_gap": "<exactly what gap this fills — if the gap is small, say so>"
+    }
+  ]
+}
+
+ANTI-HALLUCINATION — CRITICAL:
+- build_on: ONLY list paper titles that appear VERBATIM in the provided papers list. Do NOT invent,
+  paraphrase, or recall titles from training data. Tools and libraries (e.g. "PyTorch", "DDPM codebase")
+  are allowed. If no paper fits, use a short list of only real ones.
+- why_now: when citing papers as evidence, use ONLY titles from the provided list. You may describe
+  a concept or gap without citing a specific paper if you don't have one in the list.
+- Do NOT fabricate author names, paper titles, or publication venues.
+
+CALIBRATION — you MUST follow this:
+- feasibility: most ideas are 5–7. Use 9–10 only for truly simple extensions. Use 1–3 for ideas \
+requiring infrastructure only top labs have.
+- impact: most work has modest impact (4–6). Use 8–10 only for ideas that could redefine the subfield.
+- novelty: if similar ideas appear in the paper list, score low (2–4). Score 8–10 only if genuinely \
+unexplored.
+- Do NOT give every idea a high score. Honest variation is required.
+- If an idea is risky or incremental, the scores must reflect that.
+- risks is REQUIRED — every idea has real risks. Do not write "limited" or "none".
+- Rank ideas from best to worst by (feasibility + impact + novelty) combined.
+- Generate exactly the number of ideas requested.
 """
 
 _TREND_SYSTEM_PROMPT = """\
@@ -314,6 +395,94 @@ class KnowledgeAnalyzer:
         }
 
     # ------------------------------------------------------------------
+    # Research idea generation
+    # ------------------------------------------------------------------
+
+    def generate_research_ideas(
+        self,
+        field: str,
+        papers: list,
+        web_snippets: List[dict],
+        n: int = 6,
+    ) -> Dict[str, Any]:
+        """Generate specific, actionable research ideas for a field.
+
+        Parameters
+        ----------
+        field:
+            Target research direction (free-form string).
+        papers:
+            Recent LivePaper objects fetched from arXiv (sorted newest-first).
+        web_snippets:
+            List of dicts with keys title/url/body from DuckDuckGo web search.
+        n:
+            Number of ideas to generate.
+
+        Returns
+        -------
+        dict with keys:
+          - "field_pulse": str
+          - "trend_summary": str
+          - "ideas": list of idea dicts
+        """
+        logger.info(
+            "Generating %d research ideas for '%s' using %d papers + %d web signals.",
+            n, field, len(papers), len(web_snippets),
+        )
+
+        # Build paper block (newest first, up to 100)
+        paper_lines = []
+        for i, p in enumerate(papers[:100], 1):
+            year = p.published_date.year if p.published_date else "?"
+            authors_str = ", ".join((p.authors or [])[:2])
+            if len(p.authors or []) > 2:
+                authors_str += " et al."
+            abstract_snip = (getattr(p, "abstract", "") or "")[:250].strip()
+            citations = getattr(p, "citations", 0)
+            cit_str = f" [{citations} citations]" if citations else ""
+            paper_lines.append(
+                f"[{i}] \"{p.title}\" — {authors_str} ({year}){cit_str}\n"
+                f"    {abstract_snip}"
+            )
+        papers_block = "\n\n".join(paper_lines)
+
+        # Build web signal block
+        web_lines = []
+        for j, s in enumerate(web_snippets[:20], 1):
+            snippet = (s.get("body") or "")[:200].strip()
+            web_lines.append(f"[W{j}] {s.get('title', '')} — {s.get('url', '')}\n    {snippet}")
+        web_block = "\n\n".join(web_lines) if web_lines else "(no web results)"
+
+        user_prompt = (
+            f"Target field: {field}\n\n"
+            f"=== RECENT ARXIV PAPERS ({len(papers)} total, newest first) ===\n\n"
+            f"{papers_block}\n\n"
+            f"=== WEB / COMMUNITY SIGNALS ===\n\n"
+            f"{web_block}\n\n"
+            f"Generate exactly {n} research ideas as JSON."
+        )
+
+        data = self._client.complete_json(
+            system=_IDEA_SYSTEM_PROMPT,
+            user=user_prompt,
+            max_tokens=4000,
+        )
+
+        # Normalize scores
+        for idea in data.get("ideas", []):
+            for key in ("feasibility", "impact", "novelty"):
+                try:
+                    idea[key] = max(1, min(10, int(idea.get(key, 5))))
+                except (TypeError, ValueError):
+                    idea[key] = 5
+
+        return {
+            "field_pulse": str(data.get("field_pulse", "")).strip(),
+            "trend_summary": str(data.get("trend_summary", "")).strip(),
+            "ideas": data.get("ideas", []),
+        }
+
+    # ------------------------------------------------------------------
     # Trend reports
     # ------------------------------------------------------------------
 
@@ -504,14 +673,24 @@ def _build_professor_prompt(
     papers: List[Paper],
     scholar_info: Dict[str, Any],
 ) -> str:
-    top_papers = sorted(papers, key=lambda p: p.overall_score, reverse=True)[:15]
+    # Surface historical representative work by citation count (heavy weight)
+    # and also include recent high-scored papers, then deduplicate.
+    by_citations = sorted(papers, key=lambda p: p.citations, reverse=True)[:10]
+    by_score = sorted(papers, key=lambda p: p.overall_score, reverse=True)[:10]
+    # Merge: citations-ranked first, fill remaining slots with score-ranked
+    seen_ids = {p.id for p in by_citations}
+    extra = [p for p in by_score if p.id not in seen_ids]
+    combined = (by_citations + extra)[:20]
+    # Sort merged list: most-cited first so Claude sees landmark papers up top
+    top_papers = sorted(combined, key=lambda p: p.citations, reverse=True)
 
     paper_lines: List[str] = []
     for i, p in enumerate(top_papers, 1):
         summary = p.summary if p.summary else p.abstract[:200]
         pub = p.published_date.isoformat() if p.published_date else "?"
+        cit_str = f" | Citations: {p.citations:,}" if p.citations > 0 else ""
         paper_lines.append(
-            f"{i}. \"{p.title}\" ({pub})\n"
+            f"{i}. \"{p.title}\" ({pub}){cit_str}\n"
             f"   {summary}"
         )
 
@@ -529,9 +708,15 @@ def _build_professor_prompt(
     return (
         f"Researcher: {author_name}\n\n"
         f"{scholar_block}"
-        f"Papers (top {len(top_papers)} by score):\n\n"
+        f"Papers (top {len(top_papers)} — sorted by citation count to surface "
+        f"historical representative works first):\n\n"
         f"{papers_block}\n\n"
-        f"Please generate the researcher profile JSON."
+        f"IMPORTANT: Base your analysis ONLY on the papers listed above and the "
+        f"bibliometric data provided. Do NOT invent, recall, or fabricate paper "
+        f"titles, venues, or awards that are not in this list. If you cannot "
+        f"assess the researcher well from this data, say so honestly.\n\n"
+        f"Give heavy weight to historically influential papers (high citations). "
+        f"Recent activity is secondary. Please generate the researcher profile JSON."
     )
 
 

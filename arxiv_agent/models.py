@@ -207,6 +207,10 @@ class Direction:
     worthiness_score: float = 0.0   # 0–10
     worthiness_reasoning: str = ""
 
+    career_score: float = 0.0       # 0–10 salary/industry demand signal
+    career_reasoning: str = ""      # honest assessment of career/salary outlook
+    top_employers: List[str] = field(default_factory=list)  # companies hiring here
+
     key_papers: List[str] = field(default_factory=list)     # paper IDs
     key_authors: List[str] = field(default_factory=list)    # names
     open_problems: List[str] = field(default_factory=list)
@@ -225,6 +229,9 @@ class Direction:
             "status": self.status,
             "worthiness_score": self.worthiness_score,
             "worthiness_reasoning": self.worthiness_reasoning,
+            "career_score": self.career_score,
+            "career_reasoning": self.career_reasoning,
+            "top_employers": self.top_employers,
             "key_papers": self.key_papers,
             "key_authors": self.key_authors,
             "open_problems": self.open_problems,
@@ -262,6 +269,9 @@ class Direction:
             status=data.get("status", "stable"),
             worthiness_score=float(data.get("worthiness_score", 0.0)),
             worthiness_reasoning=data.get("worthiness_reasoning", ""),
+            career_score=float(data.get("career_score", 0.0)),
+            career_reasoning=data.get("career_reasoning", ""),
+            top_employers=_load_list(data.get("top_employers", [])),
             key_papers=_load_list(data.get("key_papers", [])),
             key_authors=_load_list(data.get("key_authors", [])),
             open_problems=_load_list(data.get("open_problems", [])),

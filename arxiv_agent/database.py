@@ -82,6 +82,9 @@ CREATE TABLE IF NOT EXISTS directions (
     status                  TEXT NOT NULL DEFAULT 'stable',
     worthiness_score        REAL NOT NULL DEFAULT 0.0,
     worthiness_reasoning    TEXT NOT NULL DEFAULT '',
+    career_score            REAL NOT NULL DEFAULT 0.0,
+    career_reasoning        TEXT NOT NULL DEFAULT '',
+    top_employers           TEXT NOT NULL DEFAULT '[]',
     key_papers              TEXT NOT NULL DEFAULT '[]',
     key_authors             TEXT NOT NULL DEFAULT '[]',
     open_problems           TEXT NOT NULL DEFAULT '[]',
@@ -219,6 +222,7 @@ def _row_to_direction(row: sqlite3.Row) -> Direction:
     d["open_problems"] = _jload(d.get("open_problems", "[]"))
     d["milestones"] = _jload(d.get("milestones", "[]"))
     d["related_directions"] = _jload(d.get("related_directions", "[]"))
+    d["top_employers"] = _jload(d.get("top_employers", "[]"))
     return Direction.from_dict(d)
 
 
@@ -308,6 +312,17 @@ class Database:
                 try:
                     conn.execute(f"ALTER TABLE professors ADD COLUMN {col} {defn}")
                     logger.info("Migrated professors table: added '%s' column.", col)
+                except Exception:
+                    pass  # column already exists
+            # Migration: add career columns to directions if absent
+            for col, defn in [
+                ("career_score", "REAL NOT NULL DEFAULT 0.0"),
+                ("career_reasoning", "TEXT NOT NULL DEFAULT ''"),
+                ("top_employers", "TEXT NOT NULL DEFAULT '[]'"),
+            ]:
+                try:
+                    conn.execute(f"ALTER TABLE directions ADD COLUMN {col} {defn}")
+                    logger.info("Migrated directions table: added '%s' column.", col)
                 except Exception:
                     pass  # column already exists
 
@@ -551,11 +566,13 @@ class Database:
             INSERT OR IGNORE INTO directions (
                 id, name, aliases, overview, status,
                 worthiness_score, worthiness_reasoning,
+                career_score, career_reasoning, top_employers,
                 key_papers, key_authors, open_problems, milestones,
                 related_directions, analyzed_at
             ) VALUES (
                 :id, :name, :aliases, :overview, :status,
                 :worthiness_score, :worthiness_reasoning,
+                :career_score, :career_reasoning, :top_employers,
                 :key_papers, :key_authors, :open_problems, :milestones,
                 :related_directions, :analyzed_at
             )
@@ -569,11 +586,13 @@ class Database:
             INSERT OR REPLACE INTO directions (
                 id, name, aliases, overview, status,
                 worthiness_score, worthiness_reasoning,
+                career_score, career_reasoning, top_employers,
                 key_papers, key_authors, open_problems, milestones,
                 related_directions, analyzed_at
             ) VALUES (
                 :id, :name, :aliases, :overview, :status,
                 :worthiness_score, :worthiness_reasoning,
+                :career_score, :career_reasoning, :top_employers,
                 :key_papers, :key_authors, :open_problems, :milestones,
                 :related_directions, :analyzed_at
             )
@@ -590,6 +609,7 @@ class Database:
         d["open_problems"] = _jdump(d["open_problems"])
         d["milestones"] = _jdump(d["milestones"])
         d["related_directions"] = _jdump(d["related_directions"])
+        d["top_employers"] = _jdump(d["top_employers"])
         return d
 
     def get_direction(self, name: str) -> Optional[Direction]:

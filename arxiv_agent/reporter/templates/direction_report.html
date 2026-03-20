@@ -459,6 +459,54 @@
         </div>
       </section>
 
+      <!-- Career / Salary Score -->
+      <section class="section" id="career">
+        <div class="section-label">
+          <span class="section-label-text">Career &amp; Salary Outlook</span>
+        </div>
+
+        {% set cscore = direction.career_score %}
+        {% set cscore_color = cscore | score_color_css %}
+        {% set circ2 = 251.2 %}
+        {% set dash2 = circ2 - (cscore / 10 * circ2) %}
+
+        <div class="worthiness-block">
+          <div class="worthiness-ring-wrap">
+            <svg width="110" height="110" viewBox="0 0 110 110">
+              <circle class="ring-track" cx="55" cy="55" r="40"/>
+              <circle class="ring-fill"
+                cx="55" cy="55" r="40"
+                stroke="{{ cscore_color }}"
+                stroke-dasharray="{{ circ2 }}"
+                stroke-dashoffset="{{ dash2 }}"
+                style="filter: drop-shadow(0 0 6px {{ cscore_color }});"
+              />
+              <text class="ring-num" x="55" y="50" fill="{{ cscore_color }}">{{ "%.1f" | format(cscore) }}</text>
+              <text class="ring-denom" x="55" y="66">/ 10</text>
+            </svg>
+            <div class="worthiness-label">Career Score</div>
+          </div>
+
+          <div class="worthiness-text">
+            <h3>Industry demand &amp; salary prospects</h3>
+            <p>
+              {% if direction.career_reasoning %}
+                {{ direction.career_reasoning }}
+              {% else %}
+                No career outlook recorded for this direction.
+              {% endif %}
+            </p>
+            {% if direction.top_employers %}
+            <div style="margin-top:16px; display:flex; flex-wrap:wrap; gap:8px;">
+              {% for emp in direction.top_employers %}
+              <span style="background:var(--surface2); border:1px solid var(--border); border-radius:100px; padding:4px 14px; font-size:12px; color:var(--text2); font-weight:500;">{{ emp }}</span>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+
       <!-- Overview -->
       {% if direction.overview %}
       <section class="section" id="overview">

@@ -5,6 +5,10 @@ spanning multiple years of history.  Results are lightweight dicts — they
 are NOT stored in the local database; they are used only as survey context.
 """
 
+# ---------------------------------------------------------------------------
+# Web search (DuckDuckGo — no API key required)
+# ---------------------------------------------------------------------------
+
 from __future__ import annotations
 
 import logging
@@ -308,16 +312,28 @@ def search_arxiv_by_author(
 ) -> List[LivePaper]:
     """Search arXiv for papers authored by *author_name*.
 
-    Uses both ``au:"name"`` (exact author field) and ``au:last_name`` (broad)
-    queries merged and deduplicated to maximise recall.
+    Strategy:
+    1. First try the exact-name query ``au:"full name"`` — most precise.
+    2. Only if that returns zero results, fall back to ``au:last_name`` with a
+       strict full-name filter applied to the author list.
+
+    This avoids the common mistake of pulling in papers by unrelated authors
+    who merely share the same last name (e.g., a co-author named "Yan" on a
+    100-author Gemini paper polluting a search for "Ling-Qi Yan").
     """
     parts = author_name.strip().split()
     last_name = parts[-1] if parts else author_name
+    name_lower = author_name.lower()
+
+    def _author_matches(result_authors: List[str]) -> bool:
+        """Return True only if the full requested name appears in the author list."""
+        return any(name_lower in a.lower() for a in result_authors)
 
     papers: List[LivePaper] = []
     seen: set = set()
 
-    for query in (f'au:"{author_name}"', f"au:{last_name}"):
+    def _run_query(query: str, filter_fn) -> List[LivePaper]:
+        results = []
         client = arxiv.Client(page_size=min(max_results, 100), delay_seconds=1.0, num_retries=3)
         search = arxiv.Search(
             query=query,
@@ -330,15 +346,12 @@ def search_arxiv_by_author(
                 arxiv_id = result.entry_id.split("/abs/")[-1].split("v")[0]
                 if arxiv_id in seen:
                     continue
-                seen.add(arxiv_id)
-                # Only keep if author name actually appears in the author list
                 result_authors = [a.name for a in result.authors]
-                name_lower = author_name.lower()
-                if not any(name_lower in a.lower() or last_name.lower() in a.lower()
-                           for a in result_authors):
+                if not filter_fn(result_authors):
                     continue
+                seen.add(arxiv_id)
                 published = result.published.date() if result.published else None
-                papers.append(LivePaper(
+                results.append(LivePaper(
                     id=arxiv_id,
                     title=result.title.strip(),
                     authors=result_authors,
@@ -350,6 +363,16 @@ def search_arxiv_by_author(
                 ))
         except Exception as exc:
             logger.warning("arXiv author search error for '%s': %s", author_name, exc)
+        return results
+
+    # 1. Exact-name query (highest precision)
+    papers = _run_query(f'au:"{author_name}"', _author_matches)
+    time.sleep(1.0)
+
+    # 2. Broad last-name fallback — only if exact query found nothing,
+    #    and still filtered strictly by full name match.
+    if not papers:
+        papers = _run_query(f"au:{last_name}", _author_matches)
         time.sleep(1.0)
 
     return papers
@@ -406,6 +429,61 @@ def search_arxiv_recent_for_field(
         reverse=True,
     )
     return results
+
+
+# ---------------------------------------------------------------------------
+# Web / social search for idea generation
+# ---------------------------------------------------------------------------
+
+def search_web_for_field(
+    field: str,
+    max_results: int = 10,
+) -> List[dict]:
+    """Search the open web (via DuckDuckGo) for recent news, blog posts, and
+    discussions about *field*.
+
+    Returns a list of dicts with keys: title, url, body (snippet).
+    Falls back gracefully to [] if duckduckgo-search is not installed or fails.
+    """
+    try:
+        try:
+            from ddgs import DDGS  # type: ignore (new package name)
+        except ImportError:
+            from duckduckgo_search import DDGS  # type: ignore (old name fallback)
+    except ImportError:
+        logger.debug("duckduckgo-search not installed — skipping web search")
+        return []
+
+    queries = [
+        f"{field} research 2025 2026 new",
+        f"{field} open problems challenges 2025",
+        f"{field} trending papers breakthrough site:reddit.com OR site:twitter.com OR site:x.com OR site:huggingface.co OR site:openreview.net",
+    ]
+
+    results: List[dict] = []
+    seen_urls: set = set()
+
+    try:
+        with DDGS() as ddgs:
+            for query in queries:
+                try:
+                    hits = ddgs.text(query, max_results=max_results, timelimit="y")
+                    for h in (hits or []):
+                        url = h.get("href", "")
+                        if url and url not in seen_urls:
+                            seen_urls.add(url)
+                            results.append({
+                                "title": h.get("title", ""),
+                                "url": url,
+                                "body": h.get("body", ""),
+                            })
+                except Exception as exc:
+                    logger.debug("DDG query '%s' failed: %s", query, exc)
+                time.sleep(0.5)
+    except Exception as exc:
+        logger.debug("DuckDuckGo search failed: %s", exc)
+
+    return results[:max_results * 2]
 
 
 # ---------------------------------------------------------------------------

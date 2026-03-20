@@ -54,6 +54,9 @@ trailing text — that strictly conforms to this schema:
   "status": "<one of: emerging | stable | declining | dead>",
   "worthiness_score": <integer 1-10>,
   "worthiness_reasoning": "<detailed paragraph: is it worth pursuing? why? ceiling?>",
+  "career_score": <integer 1-10>,
+  "career_reasoning": "<paragraph: salary outlook, industry demand, top companies hiring, job market trajectory>",
+  "top_employers": ["<company 1>", "<company 2>", "<company 3>", ...],
   "key_papers": ["<paper_id_1>", "<paper_id_2>", ...],
   "open_problems": [
     "<open problem 1>",
@@ -69,17 +72,41 @@ trailing text — that strictly conforms to this schema:
   "related_directions": ["<direction name 1>", "<direction name 2>", ...]
 }
 
-Scoring guidelines for worthiness_score:
-- 1–3: Not worth pursuing (oversaturated, dying, limited ceiling)
-- 4–6: Moderate opportunity, significant competition, or uncertain future
-- 7–8: Worth pursuing — growing, clear open problems, good publication venues
-- 9–10: Exceptional opportunity — emerging, high impact, limited competition
+Scoring guidelines for worthiness_score (research opportunity):
+- 1–3: Not worth pursuing (oversaturated, dying, limited ceiling, dominated by big labs)
+- 4–6: Moderate opportunity — real competition or uncertain future; entry-level interest only
+- 7–8: Worth pursuing — growing, clear open problems, realistic to contribute
+- 9–10: Exceptional — emerging fast, high impact potential, low competition RIGHT NOW
 
-Status definitions:
-- emerging: rapidly growing, lots of new papers and interest
-- stable: steady publication rate, well-established field
-- declining: publication rate dropping, fewer new entrants
-- dead: virtually no new activity
+Scoring guidelines for career_score (salary & industry demand for PhD/MSc graduates):
+- 1–3: Poor career prospects — niche/academic only, few industry jobs, low salaries, or declining demand
+- 4–6: Moderate — some industry interest but competitive market or unclear trajectory
+- 7–8: Strong demand — multiple big tech companies hiring, competitive salaries ($150k–$250k+ in US)
+- 9–10: Exceptional — highest-paying skills in the market, fierce industry competition for talent
+
+Status definitions — be ACCURATE and CRITICAL:
+- emerging: rapidly growing in the LAST 1–2 YEARS, clear upward trajectory in publications and attention
+- stable: steady state, established field with consistent publication rate and community
+- declining: CLEARLY losing momentum — publication rate dropping, researchers moving away, industry interest waning
+- dead: virtually no new activity, field has been abandoned or fully absorbed elsewhere
+
+STATUS CALIBRATION — you MUST follow this:
+- Many fields ARE declining or dead. Do NOT default to 'emerging' or 'stable'.
+- Assign 'declining' when you see: fewer new papers YoY, researchers pivoting away, major labs abandoning the area.
+- Assign 'dead' when the field has stagnated for 2+ years with no meaningful breakthroughs.
+- Only use 'emerging' when you have EVIDENCE of rapid recent growth.
+
+WORTHINESS CALIBRATION — you MUST follow this:
+- Most directions land in the 4–7 range. Use 8+ only for genuinely high-opportunity directions.
+- Use 1–3 when a field is crowded by top labs (e.g. OpenAI, Google), has diminishing returns, \
+or a small team cannot realistically compete.
+- Be explicit in worthiness_reasoning about WHY something is NOT a good bet, not just why it is.
+- Do NOT inflate scores to sound encouraging. Honest, critical assessment is more valuable.
+
+ANTI-HALLUCINATION:
+- key_papers: ONLY use paper IDs from the provided list. IDs not in the list will be discarded.
+- Do NOT invent or recall paper titles, author names, or venues in overview or reasoning text.
+  If you want to reference a paper, use its ID from the list. Do NOT write titles from memory.
 
 Return ONLY the JSON object.
 """
@@ -327,6 +354,13 @@ def _parse_direction(
     except (TypeError, ValueError):
         worthiness_score = 5.0
 
+    # Career score
+    try:
+        career_score = float(data.get("career_score", 5.0))
+        career_score = max(0.0, min(10.0, career_score))
+    except (TypeError, ValueError):
+        career_score = 5.0
+
     direction_id = _slugify(direction_name)
 
     return Direction(
@@ -337,6 +371,9 @@ def _parse_direction(
         status=status,
         worthiness_score=worthiness_score,
         worthiness_reasoning=str(data.get("worthiness_reasoning", "")).strip(),
+        career_score=career_score,
+        career_reasoning=str(data.get("career_reasoning", "")).strip(),
+        top_employers=_ensure_str_list(data.get("top_employers", [])),
         key_papers=key_papers,
         key_authors=[],  # populated separately if needed
         open_problems=_ensure_str_list(data.get("open_problems", [])),

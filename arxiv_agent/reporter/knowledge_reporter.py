@@ -224,6 +224,51 @@ class KnowledgeReporter:
         return str(output_path.resolve())
 
     # ------------------------------------------------------------------
+    # Idea Report
+    # ------------------------------------------------------------------
+
+    def generate_idea_report(
+        self,
+        field: str,
+        field_pulse: str,
+        trend_summary: str,
+        ideas: list,
+        paper_count: int,
+        web_count: int,
+    ) -> str:
+        """Render an HTML research idea report.
+
+        Returns
+        -------
+        str
+            Absolute path to the generated HTML file.
+        """
+        template = self._jinja_env.get_template("idea_report.html")
+
+        context = {
+            "field": field,
+            "field_pulse": field_pulse,
+            "trend_summary": trend_summary,
+            "ideas": ideas,
+            "paper_count": paper_count,
+            "web_count": web_count,
+            "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
+            "report_id": str(uuid.uuid4())[:8],
+        }
+        html_content = template.render(**context)
+
+        output_dir = self.report_dir / "ideas"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+        slug = _slugify(field)[:48]
+        output_path = output_dir / f"{timestamp}-{slug}.html"
+        output_path.write_text(html_content, encoding="utf-8")
+
+        logger.info("Idea report saved to %s", output_path)
+        return str(output_path.resolve())
+
+    # ------------------------------------------------------------------
     # Private
     # ------------------------------------------------------------------
 

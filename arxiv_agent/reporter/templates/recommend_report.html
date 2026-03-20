@@ -221,18 +221,17 @@
       user-select: none;
     }
 
-    /* Left accent bar — color varies by opportunity score */
+    /* Left accent bar — honest color by opportunity score */
     .rec-card::before {
       content: '';
       position: absolute; left: 0; top: 0; bottom: 0;
       width: 4px;
       border-radius: var(--radius) 0 0 var(--radius);
     }
-    .rec-card.opp-high::before  { background: linear-gradient(to bottom, var(--gold), var(--orange)); }
-    .rec-card.opp-mid::before   { background: linear-gradient(to bottom, var(--green), var(--blue)); }
-    .rec-card.opp-low::before   { background: linear-gradient(to bottom, var(--blue), var(--purple)); }
+    .rec-card.opp-high::before  { background: var(--gold); }
+    .rec-card.opp-mid::before   { background: var(--green); }
+    .rec-card.opp-low::before   { background: var(--text3); }
 
-    /* Top glow */
     .rec-card.opp-high { box-shadow: 0 0 0 1px var(--border), inset 0 0 80px rgba(247,183,49,0.02); }
 
     .rec-header {
@@ -486,33 +485,35 @@
             <div class="score-grid">
               <!-- Momentum -->
               {% set m = rec.momentum %}
+              {% set m_color = "#F7B731" if m >= 7 else ("#4ACA8C" if m >= 4 else "#F76464") %}
               <div class="score-item">
                 <div class="score-label">Momentum</div>
                 <div class="score-row">
-                  <span class="score-num" style="color: var(--cyan);">{{ m }}</span>
+                  <span class="score-num" style="color: {{ m_color }};">{{ m }}</span>
                   <span style="font-size:11px; color:var(--text3); font-family:'JetBrains Mono',monospace;">/10</span>
                   <div class="score-bar-track">
-                    <div class="score-bar-fill" style="width: {{ m * 10 }}%; background: var(--cyan);"></div>
+                    <div class="score-bar-fill" style="width: {{ m * 10 }}%; background: {{ m_color }};"></div>
                   </div>
                 </div>
               </div>
 
               <!-- Novelty -->
               {% set nv = rec.novelty %}
+              {% set nv_color = "#F7B731" if nv >= 7 else ("#4ACA8C" if nv >= 4 else "#F76464") %}
               <div class="score-item">
                 <div class="score-label">Novelty</div>
                 <div class="score-row">
-                  <span class="score-num" style="color: var(--purple);">{{ nv }}</span>
+                  <span class="score-num" style="color: {{ nv_color }};">{{ nv }}</span>
                   <span style="font-size:11px; color:var(--text3); font-family:'JetBrains Mono',monospace;">/10</span>
                   <div class="score-bar-track">
-                    <div class="score-bar-fill" style="width: {{ nv * 10 }}%; background: var(--purple);"></div>
+                    <div class="score-bar-fill" style="width: {{ nv * 10 }}%; background: {{ nv_color }};"></div>
                   </div>
                 </div>
               </div>
 
               <!-- Opportunity -->
               {% set op = rec.opportunity %}
-              {% set op_color = "#F7B731" if op >= 7 else ("#4ACA8C" if op >= 4 else "#5B9CF6") %}
+              {% set op_color = "#F7B731" if op >= 7 else ("#4ACA8C" if op >= 4 else "#F76464") %}
               <div class="score-item">
                 <div class="score-label">Opportunity</div>
                 <div class="score-row">
@@ -530,6 +531,14 @@
             <div class="rec-section">
               <div class="rec-section-label">Why now</div>
               <div class="rec-why">{{ rec.why_promising }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Caveats / honest warning -->
+            {% if rec.caveats %}
+            <div class="rec-section">
+              <div class="rec-section-label">⚠ Caveats</div>
+              <div style="background: rgba(247,100,100,0.06); border: 1px solid rgba(247,100,100,0.2); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #F9A8A8; line-height: 1.65;">{{ rec.caveats }}</div>
             </div>
             {% endif %}
 

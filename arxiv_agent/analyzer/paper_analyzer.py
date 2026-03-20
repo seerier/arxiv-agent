@@ -67,6 +67,13 @@ Scoring guidelines:
 - is_breakthrough: set to true only if this paper represents a significant \
 paradigm shift or enables something previously impossible.
 
+CALIBRATION — you MUST follow this:
+- Most papers are average: novelty 4–6, impact 4–6. Only use 8+ for genuinely \
+exceptional work. Only use 1–3 for clearly weak or incremental work.
+- Do NOT inflate scores to be encouraging. Honest assessment only.
+- is_breakthrough should be true for fewer than 5% of papers — it means the field \
+will look different because of this paper. Do not use it for solid incremental work.
+
 Return ONLY the JSON object.  Do not wrap it in markdown.
 """
 
