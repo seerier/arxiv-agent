@@ -356,6 +356,59 @@ def search_arxiv_by_author(
 
 
 # ---------------------------------------------------------------------------
+# Recent-papers search for field recommendation
+# ---------------------------------------------------------------------------
+
+def search_arxiv_recent_for_field(
+    queries: List[str],
+    max_per_query: int = 30,
+) -> List[LivePaper]:
+    """Fetch recent papers for a set of field queries, sorted by submission date.
+
+    Used by `arxiv recommend` to gather a snapshot of what is actively being
+    published right now, so Claude can identify trending topics.
+    """
+    seen: set = set()
+    results: List[LivePaper] = []
+
+    for query in queries:
+        client = arxiv.Client(page_size=min(max_per_query, 100), delay_seconds=1.0, num_retries=3)
+        search = arxiv.Search(
+            query=query,
+            max_results=max_per_query,
+            sort_by=arxiv.SortCriterion.SubmittedDate,
+            sort_order=arxiv.SortOrder.Descending,
+        )
+        try:
+            for result in client.results(search):
+                arxiv_id = result.entry_id.split("/abs/")[-1].split("v")[0]
+                if arxiv_id in seen:
+                    continue
+                seen.add(arxiv_id)
+                published = result.published.date() if result.published else None
+                results.append(LivePaper(
+                    id=arxiv_id,
+                    title=result.title.strip(),
+                    authors=[a.name for a in result.authors],
+                    abstract=(result.summary or "").strip(),
+                    url=result.entry_id,
+                    pdf_url=result.pdf_url or "",
+                    published_date=published,
+                    source="arxiv",
+                ))
+        except Exception as exc:
+            logger.warning("arXiv recent search error for '%s': %s", query, exc)
+        time.sleep(1.0)
+
+    # Sort by recency (newest first)
+    results.sort(
+        key=lambda p: p.published_date or date(2000, 1, 1),
+        reverse=True,
+    )
+    return results
+
+
+# ---------------------------------------------------------------------------
 # Combined live search
 # ---------------------------------------------------------------------------
 

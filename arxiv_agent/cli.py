@@ -820,7 +820,7 @@ def ask(question: str, open_browser: bool, no_live: bool, arxiv_results: int):
             html_path = knowledge_reporter.generate_ask_report(
                 question=question,
                 answer=answer,
-                papers=papers,
+                papers=all_papers,
             )
         console.print(f"\n[dim]Report saved to:[/dim] [cyan]{html_path}[/cyan]")
         if open_browser:
@@ -1031,6 +1031,184 @@ def survey(area: str, open_browser: bool, arxiv_results: int, no_live: bool):
         console.print(f"\n[dim]Survey report saved to:[/dim] [cyan]{survey_path}[/cyan]")
         if open_browser:
             webbrowser.open(survey_path.as_uri())
+    except Exception as exc:
+        console.print(f"[yellow]Warning: HTML report generation failed: {exc}[/yellow]")
+
+    console.print()
+
+
+# ---------------------------------------------------------------------------
+# recommend
+# ---------------------------------------------------------------------------
+
+@cli.command()
+@click.argument("field")
+@click.option("-n", "--count", default=8, show_default=True, help="Number of topic recommendations")
+@click.option("--no-live", is_flag=True, default=False, help="Skip live arXiv search, use local DB only")
+@click.option("--arxiv-results", default=30, show_default=True, help="Max recent papers to fetch per query")
+@click.option("--open/--no-open", "open_browser", default=True, help="Open the HTML report in a browser")
+def recommend(field: str, count: int, no_live: bool, arxiv_results: int, open_browser: bool):
+    """Discover the most promising research topics in FIELD.
+
+    Fetches recent papers from arXiv in the given field, then uses Claude to
+    identify high-opportunity topics scored by momentum, novelty, and research
+    opportunity. Saves a full HTML report.
+
+    Examples:
+
+      arxiv recommend "event camera scene flow"
+
+      arxiv recommend "neural rendering and 3D reconstruction" -n 5
+
+      arxiv recommend "diffusion models" --arxiv-results 40
+    """
+    from arxiv_agent.fetcher.live_search import search_arxiv_recent_for_field, live_to_paper
+
+    app = _build_app()
+    db = app["db"]
+    knowledge_analyzer = app["knowledge_analyzer"]
+    knowledge_reporter = app["knowledge_reporter"]
+
+    queries = [field]
+
+    console.print()
+    console.print(Panel(
+        f"[bold cyan]Research Topic Recommendations[/bold cyan]\n"
+        f"[dim]Field: {field[:100]}{'…' if len(field) > 100 else ''}[/dim]\n"
+        f"[dim]Fetching recent papers + Claude analysis[/dim]",
+        expand=False,
+    ))
+
+    # ── 1. Fetch recent papers ─────────────────────────────────────────────
+    papers = []
+    if not no_live:
+        with console.status("[cyan]Fetching recent papers from arXiv…[/cyan]", spinner="dots"):
+            try:
+                live_raw = search_arxiv_recent_for_field(queries, max_per_query=arxiv_results)
+                papers = [live_to_paper(p) for p in live_raw]
+            except Exception as exc:
+                console.print(f"[yellow]Live search failed (non-fatal): {exc}[/yellow]")
+
+        if papers:
+            years = [p.published_date.year for p in papers if p.published_date]
+            year_range = f"{min(years)}–{max(years)}" if years else "unknown"
+            console.print(
+                f"[dim]Fetched:[/dim] [green]{len(papers)} recent papers[/green] "
+                f"spanning [cyan]{year_range}[/cyan]"
+            )
+
+    # Fall back to local DB if live search empty or disabled
+    if not papers:
+        with console.status("[cyan]Loading papers from local database…[/cyan]", spinner="dots"):
+            local = db.search_papers(field, limit=60)
+            papers.extend(local)
+        # Deduplicate
+        seen_ids: set = set()
+        unique_papers = []
+        for p in papers:
+            if p.id not in seen_ids:
+                seen_ids.add(p.id)
+                unique_papers.append(p)
+        papers = unique_papers
+
+    if not papers:
+        console.print("[bold yellow]No papers found. Try running [cyan]arxiv fetch[/cyan] first.[/bold yellow]")
+        return
+
+    # ── 2. Claude analysis ─────────────────────────────────────────────────
+    with console.status(
+        f"[cyan]Claude is identifying {count} promising topics…[/cyan]", spinner="dots"
+    ):
+        try:
+            result = knowledge_analyzer.recommend_topics(
+                field_description=field,
+                papers=papers,
+                n=count,
+            )
+        except Exception as exc:
+            console.print(f"[bold red]Analysis failed:[/bold red] {exc}")
+            sys.exit(1)
+
+    # ── 3. Display ─────────────────────────────────────────────────────────
+    field_summary = result.get("field_summary", "")
+    recommendations = result.get("recommendations", [])
+
+    if field_summary:
+        console.print()
+        console.print(Panel(
+            field_summary,
+            title="[bold]Field Overview[/bold]",
+            border_style="dim blue",
+        ))
+
+    console.print()
+    console.print(f"[bold cyan]Top {len(recommendations)} Research Topic Recommendations[/bold cyan]")
+    console.print()
+
+    for i, rec in enumerate(recommendations, 1):
+        topic = rec.get("topic", "Unknown topic")
+        momentum = rec.get("momentum", 5)
+        novelty = rec.get("novelty", 5)
+        opportunity = rec.get("opportunity", 5)
+        why = rec.get("why_promising", "")
+        angle = rec.get("suggested_angle", "")
+        rep_papers = rec.get("representative_papers", [])
+
+        # Opportunity score colour
+        opp_colour = _score_colour(opportunity)
+
+        # Score bar line
+        scores_text = Text()
+        scores_text.append("  Momentum  ", style="dim")
+        scores_text.append(f"{momentum:2d}/10 ", style="bold cyan")
+        scores_text.append(_score_bar(momentum, width=8), style="cyan")
+        scores_text.append("   Novelty  ", style="dim")
+        scores_text.append(f"{novelty:2d}/10 ", style="bold purple")
+        scores_text.append(_score_bar(novelty, width=8), style="purple")
+        scores_text.append("   Opportunity  ", style="dim")
+        scores_text.append(f"{opportunity:2d}/10 ", style=opp_colour)
+        scores_text.append(_score_bar(opportunity, width=8), style="green")
+
+        body = Text()
+        body.append(f"{topic}\n", style="bold white")
+        body.append_text(scores_text)
+
+        if why:
+            body.append(f"\n\n[cyan]Why now:[/cyan] {why}", style="")
+
+        if angle:
+            body.append(f"\n\n[gold1]Research angle:[/gold1] {angle}", style="")
+
+        if rep_papers:
+            body.append("\n\n[dim]Representative papers:[/dim]\n", style="")
+            for title in rep_papers[:2]:
+                body.append(f"  [dim]▸[/dim] {_truncate(title, 80)}\n", style="dim")
+
+        console.print(Panel(
+            body,
+            title=f"[bold]#{i}[/bold]",
+            border_style="blue" if opportunity >= 7 else "dim",
+            padding=(1, 2),
+        ))
+
+    console.print()
+    console.print(
+        f"[dim]Based on {len(papers)} recent papers · "
+        f"Use [cyan]arxiv direction \"<topic>\"[/cyan] to dive deeper into any of these.[/dim]"
+    )
+
+    # ── 4. HTML report ─────────────────────────────────────────────────────
+    try:
+        with console.status("[cyan]Generating HTML report…[/cyan]", spinner="dots"):
+            html_path = knowledge_reporter.generate_recommend_report(
+                field_description=field,
+                field_summary=field_summary,
+                recommendations=recommendations,
+                paper_count=len(papers),
+            )
+        console.print(f"[dim]Report saved to:[/dim] [cyan]{html_path}[/cyan]")
+        if open_browser:
+            webbrowser.open(Path(html_path).as_uri())
     except Exception as exc:
         console.print(f"[yellow]Warning: HTML report generation failed: {exc}[/yellow]")
 
@@ -1449,4 +1627,141 @@ def setup(key: Optional[str]):
             expand=False,
         )
     )
+    console.print()
+
+
+
+# ---------------------------------------------------------------------------
+# topic  (saved topics management)
+# ---------------------------------------------------------------------------
+
+@cli.group()
+def topic():
+    """Manage your saved research topics of interest."""
+
+
+@topic.command("save")
+@click.argument("name")
+@click.option("--field", default="", help="Field or area this topic belongs to")
+@click.option("--notes", default="", help="Personal notes about this topic")
+def topic_save(name: str, field: str, notes: str):
+    """Save a research topic you're interested in.
+
+    Examples:
+
+      arxiv topic save "Neuromorphic Tokenization for Event Streams"
+
+      arxiv topic save "Flow Matching for Video" --field "generative models"
+    """
+    app = _build_app()
+    db = app["db"]
+    topic_id = db.save_topic(name=name, field=field, notes=notes)
+    console.print()
+    console.print(Panel(
+        f"[bold green]✓ Topic saved[/bold green]\n\n"
+        f"[bold white]{name}[/bold white]\n"
+        + (f"[dim]Field: {field}[/dim]\n" if field else "")
+        + (f"[dim]Notes: {notes}[/dim]\n" if notes else "")
+        + f"\n[dim]ID: {topic_id}[/dim]\n\n"
+        f"[dim]Run [cyan]arxiv topic list[/cyan] to see all saved topics.[/dim]",
+        border_style="green",
+        expand=False,
+    ))
+    console.print()
+
+
+@topic.command("list")
+def topic_list():
+    """List all saved research topics."""
+    app = _build_app()
+    db = app["db"]
+    topics = db.get_saved_topics()
+    console.print()
+    if not topics:
+        console.print(Panel(
+            "[dim]No saved topics yet.[/dim]\n\n"
+            "Save one with:\n"
+            "  [cyan]arxiv topic save \"Your Topic Name\"[/cyan]\n"
+            "Or click [bold]Save Topic[/bold] in any recommendation HTML report.",
+            border_style="dim",
+            expand=False,
+        ))
+        console.print()
+        return
+    table = Table(
+        title=f"[bold]Saved Research Topics[/bold] ({len(topics)})",
+        box=box.ROUNDED,
+        show_header=True,
+        header_style="bold cyan",
+        expand=True,
+    )
+    table.add_column("#", width=4, justify="right", style="dim")
+    table.add_column("Topic", min_width=30)
+    table.add_column("Field", min_width=18, style="dim")
+    table.add_column("Opp", width=5, justify="center")
+    table.add_column("Saved", width=12, style="dim")
+    table.add_column("Notes", min_width=20, style="dim")
+    for i, t in enumerate(topics, 1):
+        opp = t.get("opportunity", 0)
+        opp_str = f"{opp}" if opp else "—"
+        opp_style = _score_colour(opp) if opp else "dim"
+        saved_at = t.get("saved_at", "")[:10]
+        field_str = _truncate(t.get("field", "") or "", 22)
+        notes_str = _truncate(t.get("notes", "") or "", 30)
+        table.add_row(
+            str(i),
+            t["name"],
+            field_str,
+            Text(opp_str, style=opp_style),
+            saved_at,
+            notes_str,
+        )
+    console.print(table)
+    console.print(
+        f"\n[dim]Remove: [cyan]arxiv topic remove <id>[/cyan]  "
+        f"·  Add notes: [cyan]arxiv topic note <id> \"text\"[/cyan][/dim]"
+    )
+    console.print()
+
+
+@topic.command("remove")
+@click.argument("topic_id")
+def topic_remove(topic_id: str):
+    """Remove a saved topic by ID (get IDs from arxiv topic list)."""
+    app = _build_app()
+    db = app["db"]
+    deleted = db.delete_saved_topic(topic_id)
+    console.print()
+    if deleted:
+        console.print(Panel(
+            f"[bold green]✓ Removed topic:[/bold green] [dim]{topic_id}[/dim]",
+            border_style="green", expand=False,
+        ))
+    else:
+        console.print(Panel(
+            f"[bold yellow]No topic found with ID:[/bold yellow] [dim]{topic_id}[/dim]\n\n"
+            "[dim]Run [cyan]arxiv topic list[/cyan] to see valid IDs.[/dim]",
+            border_style="yellow", expand=False,
+        ))
+    console.print()
+
+
+@topic.command("note")
+@click.argument("topic_id")
+@click.argument("note_text")
+def topic_note(topic_id: str, note_text: str):
+    """Add or update notes on a saved topic.
+
+    Example: arxiv topic note neuromorphic-tokenization "Check ECCV deadline"
+    """
+    app = _build_app()
+    db = app["db"]
+    db.update_topic_notes(topic_id, note_text)
+    console.print()
+    console.print(Panel(
+        f"[bold green]✓ Notes updated[/bold green]\n\n"
+        f"[dim]ID:[/dim]    {topic_id}\n"
+        f"[dim]Notes:[/dim] {note_text}",
+        border_style="green", expand=False,
+    ))
     console.print()

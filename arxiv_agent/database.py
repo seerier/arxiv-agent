@@ -143,6 +143,21 @@ CREATE TABLE IF NOT EXISTS reports (
 )
 """
 
+_DDL_SAVED_TOPICS = """
+CREATE TABLE IF NOT EXISTS saved_topics (
+    id          TEXT PRIMARY KEY,
+    name        TEXT NOT NULL,
+    field       TEXT NOT NULL DEFAULT '',
+    why         TEXT NOT NULL DEFAULT '',
+    angle       TEXT NOT NULL DEFAULT '',
+    momentum    INTEGER NOT NULL DEFAULT 0,
+    novelty     INTEGER NOT NULL DEFAULT 0,
+    opportunity INTEGER NOT NULL DEFAULT 0,
+    notes       TEXT NOT NULL DEFAULT '',
+    saved_at    TEXT NOT NULL
+)
+"""
+
 _DDL_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_papers_published ON papers(published_date DESC)",
     "CREATE INDEX IF NOT EXISTS idx_papers_overall_score ON papers(overall_score DESC)",
@@ -274,6 +289,7 @@ class Database:
                 _DDL_PROFESSORS,
                 _DDL_CONFERENCES,
                 _DDL_REPORTS,
+                _DDL_SAVED_TOPICS,
             ]:
                 conn.execute(ddl)
             for idx in _DDL_INDEXES:
@@ -873,3 +889,55 @@ class Database:
             "latest_paper_date": latest_paper_date,
             "sources": sources,
         }
+
+    # ==================================================================
+    # Saved Topics
+    # ==================================================================
+
+    def save_topic(
+        self,
+        name: str,
+        field: str = "",
+        why: str = "",
+        angle: str = "",
+        momentum: int = 0,
+        novelty: int = 0,
+        opportunity: int = 0,
+        notes: str = "",
+    ) -> str:
+        """Save a research topic of interest. Returns the topic id."""
+        import uuid, re
+        topic_id = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:80]
+        now = datetime.utcnow().isoformat()
+        with self._connect() as conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO saved_topics
+                   (id, name, field, why, angle, momentum, novelty, opportunity, notes, saved_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (topic_id, name, field, why, angle, momentum, novelty, opportunity, notes, now),
+            )
+        return topic_id
+
+    def get_saved_topics(self) -> List[Dict]:
+        """Return all saved topics sorted by saved_at descending."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM saved_topics ORDER BY saved_at DESC"
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def delete_saved_topic(self, topic_id: str) -> bool:
+        """Delete a saved topic by id. Returns True if a row was deleted."""
+        with self._connect() as conn:
+            cur = conn.execute(
+                "DELETE FROM saved_topics WHERE id = ?", (topic_id,)
+            )
+        return cur.rowcount > 0
+
+    def update_topic_notes(self, topic_id: str, notes: str) -> None:
+        """Update the notes field of a saved topic."""
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE saved_topics SET notes = ? WHERE id = ?",
+                (notes, topic_id),
+            )

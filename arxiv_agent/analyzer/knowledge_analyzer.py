@@ -64,6 +64,37 @@ originality of contributions, influence on the field, publication venues, \
 and whether this is someone worth following or collaborating with.
 """
 
+_RECOMMEND_SYSTEM_PROMPT = """\
+You are an expert AI research strategist specializing in identifying high-value \
+research opportunities. Given a snapshot of recent papers in a researcher's field, \
+you identify the most promising specific topics they should explore next.
+
+Return ONLY a valid JSON object with this schema (no markdown, no preamble):
+{
+  "field_summary": "<1-2 sentence overview of what is currently hot in this field>",
+  "recommendations": [
+    {
+      "topic": "<specific, concrete topic name — not vague, e.g. 'Flow Matching for Video Generation' not just 'video'>",
+      "momentum": <integer 1-10, how fast this topic is growing>,
+      "novelty": <integer 1-10, how unexplored/open it still is>,
+      "opportunity": <integer 1-10, research opportunity score — high = few dominant papers yet>,
+      "why_promising": "<2-3 sentences: what makes this topic timely, what gap exists, why NOW is the right time>",
+      "suggested_angle": "<1 concrete research angle or question the researcher could pursue>",
+      "representative_papers": ["<paper title 1>", "<paper title 2>"]
+    }
+  ]
+}
+
+Rules:
+- Give exactly the number of recommendations requested.
+- Topics must be SPECIFIC sub-topics, not entire fields (bad: "diffusion models", good: "consistency distillation for real-time inference").
+- momentum: how much recent activity you see (papers per week trend).
+- novelty: how much unexplored territory remains (10 = almost no landmark paper yet).
+- opportunity: sweet spot score — high momentum + high novelty = high opportunity.
+- representative_papers: pick titles that are actually in the provided paper list.
+- Focus on topics where a researcher could realistically make a contribution within 6-18 months.
+"""
+
 _TREND_SYSTEM_PROMPT = """\
 You are an expert AI research trend analyst.  Your task is to interpret \
 quantitative paper-count data and write a clear, insightful markdown report.
@@ -199,6 +230,88 @@ class KnowledgeAnalyzer:
         )
         logger.debug("Profile built for '%s'.", author_name)
         return prof
+
+    # ------------------------------------------------------------------
+    # Topic recommendations
+    # ------------------------------------------------------------------
+
+    def recommend_topics(
+        self,
+        field_description: str,
+        papers: List[Paper],
+        n: int = 8,
+    ) -> Dict[str, Any]:
+        """Identify the most promising research topics in a field.
+
+        Parameters
+        ----------
+        field_description:
+            Human-readable description of the researcher's field (used in the prompt).
+        papers:
+            Recent papers from the field (should be sorted by recency).
+        n:
+            Number of topic recommendations to return.
+
+        Returns
+        -------
+        dict with keys:
+          - "field_summary": str
+          - "recommendations": list of dicts, each with:
+              topic, momentum, novelty, opportunity, why_promising,
+              suggested_angle, representative_papers
+        """
+        logger.info(
+            "Generating %d topic recommendations for field '%s' using %d papers.",
+            n, field_description, len(papers),
+        )
+
+        # Build paper list for the prompt (title + abstract excerpt)
+        paper_lines = []
+        for i, p in enumerate(papers[:120], 1):
+            year = p.published_date.year if p.published_date else "?"
+            authors_str = ", ".join(p.authors[:2])
+            if len(p.authors) > 2:
+                authors_str += " et al."
+            abstract_snip = (p.abstract or p.summary or "")[:200].strip()
+            paper_lines.append(
+                f"[{i}] \"{p.title}\" — {authors_str} ({year})\n"
+                f"    {abstract_snip}"
+            )
+
+        papers_block = "\n\n".join(paper_lines)
+
+        user_prompt = (
+            f"Field: {field_description}\n\n"
+            f"I am analyzing {len(papers)} recent papers published in this field "
+            f"(sorted newest first). Please identify the {n} most promising specific "
+            f"research topics a researcher in this field should explore.\n\n"
+            f"Recent papers:\n\n{papers_block}\n\n"
+            f"Return exactly {n} recommendations as JSON."
+        )
+
+        try:
+            data = self._client.complete_json(
+                system=_RECOMMEND_SYSTEM_PROMPT,
+                user=user_prompt,
+                max_tokens=3000,
+            )
+        except Exception as exc:
+            logger.error("Failed to generate topic recommendations: %s", exc)
+            raise
+
+        # Normalize and clamp scores
+        recs = data.get("recommendations", [])
+        for rec in recs:
+            for key in ("momentum", "novelty", "opportunity"):
+                try:
+                    rec[key] = max(1, min(10, int(rec.get(key, 5))))
+                except (TypeError, ValueError):
+                    rec[key] = 5
+
+        return {
+            "field_summary": str(data.get("field_summary", "")).strip(),
+            "recommendations": recs,
+        }
 
     # ------------------------------------------------------------------
     # Trend reports

@@ -182,6 +182,51 @@ class KnowledgeReporter:
     # Private
     # ------------------------------------------------------------------
 
+    # ------------------------------------------------------------------
+    # Recommend Report
+    # ------------------------------------------------------------------
+
+    def generate_recommend_report(
+        self,
+        field_description: str,
+        field_summary: str,
+        recommendations: list,
+        paper_count: int,
+    ) -> str:
+        """Render an HTML topic recommendation report.
+
+        Returns
+        -------
+        str
+            Absolute path to the generated HTML file.
+        """
+        template = self._jinja_env.get_template("recommend_report.html")
+
+        context = {
+            "field_description": field_description,
+            "field_summary": field_summary,
+            "recommendations": recommendations,
+            "paper_count": paper_count,
+            "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
+            "report_id": str(uuid.uuid4())[:8],
+        }
+        html_content = template.render(**context)
+
+        output_dir = self.report_dir / "recommend"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+        slug = _slugify(field_description)[:48]
+        output_path = output_dir / f"{timestamp}-{slug}.html"
+        output_path.write_text(html_content, encoding="utf-8")
+
+        logger.info("Recommend report saved to %s", output_path)
+        return str(output_path.resolve())
+
+    # ------------------------------------------------------------------
+    # Private
+    # ------------------------------------------------------------------
+
     @staticmethod
     def _format_answer(text: str) -> str:
         """Convert Claude's markdown answer to rich HTML.

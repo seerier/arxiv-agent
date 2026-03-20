@@ -65,3 +65,7 @@ logs/
 # Sentence-transformers model cache (large, downloaded automatically)
 # Uncomment the next line if you don't want to commit the cache
 # ~/.cache/huggingface/
+
+# Assets — keep tape script, ignore generated media (commit manually after recording)
+assets/*.mp4
+assets/*.cast
