@@ -18,21 +18,19 @@ All live-search commands use a **70% live arXiv / 20% Claude knowledge / 10% loc
 
 ## Quick Start
 
-### 1. Clone & install
+### 1. Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/arxiv-intel.git
-cd arxiv-intel
+# Minimal install (core features)
+pip install arxiv-autopilot
 
-# Create a conda environment (Python 3.10+)
-conda create -n arxiv-intel python=3.10 -y
-conda activate arxiv-intel
+# Recommended: all features
+pip install "arxiv-autopilot[all]"
 
-# Install dependencies
-pip install -e .
-
-# Optional: semantic search (adds ~200 MB model download on first use)
-conda install -c conda-forge sentence-transformers -y
+# Or pick what you need:
+pip install "arxiv-autopilot[semantic-search]"   # AI-powered search
+pip install "arxiv-autopilot[web]"               # web dashboard
+pip install "arxiv-autopilot[tui]"               # terminal UI
 ```
 
 ### 2. Configure API keys

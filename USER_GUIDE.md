@@ -70,7 +70,7 @@ After activation, the `arxiv` command is available globally.
 │   ├── 2026-03-20-daily.html
 │   ├── directions/
 │   └── ask/
-└── arxiv_intel/         ← Source code
+└── arxiv_agent/         ← Source code
 ```
 
 Always run commands from the project root:
@@ -495,13 +495,13 @@ The system includes a built-in scheduler. To run it as a persistent background d
 conda activate claudecode
 cd /Users/zhao/AgentBase/CodeRepos/Arxiv
 /Users/zhao/miniconda3/envs/claudecode/bin/python -c "
-from arxiv_intel.config import get_config
-from arxiv_intel.database import Database
-from arxiv_intel.fetcher.coordinator import FetchCoordinator
-from arxiv_intel.analyzer.paper_analyzer import PaperAnalyzer
-from arxiv_intel.reporter.daily_reporter import DailyReporter
-from arxiv_intel.knowledge.knowledge_base import KnowledgeBase
-from arxiv_intel.scheduler import ArxivScheduler
+from arxiv_agent.config import get_config
+from arxiv_agent.database import Database
+from arxiv_agent.fetcher.coordinator import FetchCoordinator
+from arxiv_agent.analyzer.paper_analyzer import PaperAnalyzer
+from arxiv_agent.reporter.daily_reporter import DailyReporter
+from arxiv_agent.knowledge.knowledge_base import KnowledgeBase
+from arxiv_agent.scheduler import ArxivScheduler
 import pathlib, time
 
 cfg = get_config()
