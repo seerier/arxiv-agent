@@ -53,6 +53,11 @@ Icon?
 .Spotlight-V100
 .Trashes
 
+# Internal docs
+INSTRUCTIONS.md
+TODO.md
+USER_GUIDE.md
+
 # Logs
 *.log
 logs/

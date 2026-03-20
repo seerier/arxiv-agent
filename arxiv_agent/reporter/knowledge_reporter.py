@@ -13,6 +13,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
+try:
+    import markdown as _markdown_lib
+    _MARKDOWN_AVAILABLE = True
+except ImportError:
+    _MARKDOWN_AVAILABLE = False
+
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from arxiv_agent.models import Direction, Paper
@@ -178,13 +184,19 @@ class KnowledgeReporter:
 
     @staticmethod
     def _format_answer(text: str) -> str:
-        """Convert a plain-text answer to basic HTML paragraphs.
+        """Convert Claude's markdown answer to rich HTML.
 
-        If the text already contains HTML tags it is returned as-is.
-        Otherwise double-newlines become ``<p>`` tags.
+        Uses the ``markdown`` library (with tables + fenced-code extensions)
+        when available; falls back to basic paragraph wrapping otherwise.
         """
+        if _MARKDOWN_AVAILABLE:
+            return _markdown_lib.markdown(
+                text,
+                extensions=["extra", "nl2br", "sane_lists"],
+            )
+
+        # Fallback: basic paragraph conversion
         if "<p>" in text or "<ul>" in text or "<h" in text:
             return text
-
         paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
         return "\n".join(f"<p>{p}</p>" for p in paragraphs) if paragraphs else f"<p>{text}</p>"

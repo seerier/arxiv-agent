@@ -156,7 +156,7 @@ class DirectionAnalyzer:
         Parameters
         ----------
         direction_name:
-            Human-readable name of the research direction (e.g. "event cameras").
+            Human-readable name of the research direction (e.g. "diffusion models").
         papers:
             Papers associated with this direction.
 

@@ -13,10 +13,10 @@ categories:
   - eess.IV
 
 custom_queries:
-  - event camera
-  - neuromorphic
-  - DVS
-  - dynamic vision sensor
+  - diffusion models
+  - vision transformers
+  - NeRF
+  - neural rendering
 
 max_papers_per_run: 200
 

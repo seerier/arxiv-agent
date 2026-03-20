@@ -848,9 +848,9 @@ def survey(area: str, open_browser: bool, arxiv_results: int, no_live: bool):
 
     Examples:
 
-      arxiv survey "event cameras"
+      arxiv survey "diffusion models"
 
-      arxiv survey "event based optical flow"
+      arxiv survey "3D gaussian splatting"
 
       arxiv survey "neural path guiding"
 

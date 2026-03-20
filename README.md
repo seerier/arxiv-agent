@@ -5,7 +5,7 @@ An AI-powered research monitoring platform that fetches papers from arXiv, Paper
 ## Features
 
 - **Daily / Weekly / Monthly Digests** — beautiful HTML reports with top papers, breakthrough highlights, and trend analysis
-- **Live Area Surveys** — search arXiv across all time, weight by citation impact, synthesize with Claude (`arxiv survey "event cameras"`)
+- **Live Area Surveys** — search arXiv across all time, weight by citation impact, synthesize with Claude (`arxiv survey "diffusion models"`)
 - **Direction Analysis** — deep profile of any research direction: status (emerging/stable/declining), open problems, milestones, worthiness score
 - **Researcher Profiles** — live arXiv author search + Claude-generated impact rating (1–10)
 - **Research Q&A** — ask any question, get a cited answer backed by live arXiv papers
@@ -67,21 +67,21 @@ arxiv report --period weekly
 arxiv report --period monthly
 
 # Survey any research area (searches arXiv live, all years)
-arxiv survey "event cameras"
+arxiv survey "diffusion models"
 arxiv survey "neural path guiding"
 arxiv survey "diffusion models for 3D"
 
 # Deep-dive a research direction with live arXiv search
-arxiv direction "event-based optical flow"
+arxiv direction "3D gaussian splatting"
 
 # Ask a research question
-arxiv ask "What are the main challenges in neuromorphic computing?"
+arxiv ask "What are the main challenges in multimodal learning?"
 
 # Look up a researcher (live arXiv author search + impact rating)
-arxiv professor "Davide Scaramuzza"
+arxiv professor "Yann LeCun"
 
 # Semantic search your local DB
-arxiv search "spiking neural networks optical flow"
+arxiv search "vision language models"
 ```
 
 ---
@@ -120,9 +120,9 @@ categories:
   - eess.IV
 
 custom_queries:
-  - event camera
-  - neuromorphic
-  - DVS
+  - diffusion models
+  - vision transformers
+  - NeRF
 
 max_papers_per_run: 200
 claude_model: claude-sonnet-4-6

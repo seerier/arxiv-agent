@@ -19,10 +19,10 @@ from arxiv_agent.models import Paper
 # ---------------------------------------------------------------------------
 
 _EXAMPLE_QUESTIONS: List[str] = [
-    "What is the current state of event cameras?",
+    "What is the current state of diffusion models?",
     "What are the most promising directions in CV?",
     "Is diffusion model research saturated?",
-    "What are the open problems in neuromorphic computing?",
+    "What are the open problems in multimodal learning?",
     "Compare transformer vs CNN architectures in 2024",
 ]
 

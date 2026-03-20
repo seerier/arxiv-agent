@@ -6,9 +6,9 @@ Usage
     python run.py --help
     python run.py fetch
     python run.py report
-    python run.py search "event camera"
-    python run.py direction "neuromorphic computing"
-    python run.py ask "What are the latest breakthroughs in event cameras?"
+    python run.py search "diffusion models"
+    python run.py direction "multimodal learning"
+    python run.py ask "What are the latest breakthroughs in diffusion models?"
     python run.py knowledge --emerging
     python run.py professor "Davide Scaramuzza"
     python run.py stats

@@ -163,7 +163,7 @@ class ArxivFetcher:
         Parameters
         ----------
         query:
-            Free-text search string, e.g. ``"event camera"``.
+            Free-text search string, e.g. ``"diffusion models"``.
         since_date:
             If given, only papers published on or after this date are returned.
         max_results:
@@ -208,7 +208,7 @@ class ArxivFetcher:
         categories:
             List of arXiv category codes (e.g. ``["cs.AI", "cs.CV"]``).
         custom_queries:
-            List of free-text search strings (e.g. ``["event camera"]``).
+            List of free-text search strings (e.g. ``["diffusion models"]``).
         since_date:
             Only return papers published on or after this date.
         max_results_per_query:

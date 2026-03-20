@@ -164,46 +164,86 @@
     .answer-prose {
       font-size: 15px;
       color: var(--text);
-      line-height: 1.8;
+      line-height: 1.85;
     }
-    .answer-prose p {
-      margin-bottom: 16px;
-    }
+    .answer-prose p { margin-bottom: 16px; }
     .answer-prose p:last-child { margin-bottom: 0; }
-    .answer-prose h1, .answer-prose h2, .answer-prose h3 {
+
+    .answer-prose h1, .answer-prose h2, .answer-prose h3, .answer-prose h4 {
       font-family: 'Playfair Display', serif;
       color: var(--text);
-      margin: 24px 0 10px;
       line-height: 1.25;
+      letter-spacing: -0.01em;
     }
-    .answer-prose h1 { font-size: 24px; }
-    .answer-prose h2 { font-size: 20px; }
-    .answer-prose h3 { font-size: 17px; font-family: 'Inter', sans-serif; font-weight: 600; }
-    .answer-prose ul, .answer-prose ol {
-      padding-left: 22px;
-      margin-bottom: 14px;
-    }
-    .answer-prose li {
-      margin-bottom: 6px;
-      color: var(--text2);
-    }
+    .answer-prose h1 { font-size: 26px; margin: 36px 0 14px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .answer-prose h2 { font-size: 21px; margin: 30px 0 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    .answer-prose h3 { font-size: 17px; margin: 24px 0 10px; font-family: 'Inter', sans-serif; font-weight: 700; color: var(--blue); }
+    .answer-prose h4 { font-size: 15px; margin: 18px 0 8px; font-family: 'Inter', sans-serif; font-weight: 600; color: var(--text2); }
+
+    .answer-prose ul, .answer-prose ol { padding-left: 24px; margin-bottom: 16px; }
+    .answer-prose ul { list-style: none; padding-left: 0; }
+    .answer-prose ul li { padding-left: 20px; position: relative; margin-bottom: 8px; color: var(--text2); }
+    .answer-prose ul li::before { content: '▸'; position: absolute; left: 0; color: var(--blue); font-size: 12px; top: 4px; }
+    .answer-prose ol li { margin-bottom: 8px; color: var(--text2); }
+    .answer-prose li > ul, .answer-prose li > ol { margin-top: 6px; margin-bottom: 0; }
+
     .answer-prose strong { color: var(--text); font-weight: 600; }
     .answer-prose em { color: var(--text2); }
+
     .answer-prose code {
       background: var(--surface2);
       border: 1px solid var(--border);
       border-radius: 4px;
-      padding: 1px 6px;
+      padding: 2px 7px;
       font-size: 13px;
       font-family: 'Fira Code', 'Menlo', monospace;
+      color: var(--gold);
+    }
+    .answer-prose pre {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 18px 20px;
+      overflow-x: auto;
+      margin-bottom: 18px;
+    }
+    .answer-prose pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: 13px;
+      color: var(--text);
     }
     .answer-prose blockquote {
       border-left: 3px solid var(--blue);
-      padding-left: 16px;
-      margin: 16px 0;
+      padding: 12px 18px;
+      margin: 18px 0;
+      background: rgba(79,142,247,0.04);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
       color: var(--text2);
       font-style: italic;
     }
+    .answer-prose table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 18px;
+      font-size: 14px;
+    }
+    .answer-prose th {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .answer-prose td {
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      color: var(--text2);
+    }
+    .answer-prose tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .answer-prose hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
 
     /* Citation markers [N] → links */
     .answer-prose sup a {
@@ -348,7 +388,7 @@
 
         <div class="answer-card">
           <div class="answer-prose">
-            {{ answer_raw }}
+            {{ answer_raw | safe }}
           </div>
           <div class="claude-badge">⚡ AI Analysis — Verify facts from primary sources</div>
         </div>

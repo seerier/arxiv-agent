@@ -28,6 +28,7 @@ setup(
         "requests>=2.31.0",
         "pyyaml>=6.0",
         "python-dateutil>=2.8.0",
+        "markdown>=3.5",
     ],
     extras_require={
         "semantic-search": [

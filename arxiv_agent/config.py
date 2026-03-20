@@ -64,10 +64,10 @@ logger = logging.getLogger(__name__)
 _DEFAULTS: Dict[str, Any] = {
     "categories": ["cs.AI", "cs.LG", "cs.CV", "cs.GR", "eess.IV"],
     "custom_queries": [
-        "event camera",
-        "neuromorphic",
-        "DVS",
-        "dynamic vision sensor",
+        "diffusion models",
+        "vision-based",
+        "SLAM",
+        "3D reconstruction",
     ],
     "max_papers_per_run": 200,
     "schedule_time": "08:00",
