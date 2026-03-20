@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+{% block title %}{{ paper.title | truncate_text(60) }}{% endblock %}
+
+{% block extra_styles %}
+.paper-detail-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(20px, 3.5vw, 30px);
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+}
+.author-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.author-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 4px 13px;
+  font-size: 12px;
+  color: var(--text2);
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+.author-chip:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+  text-decoration: none;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--text2);
+  font-weight: 500;
+}
+.source-pill {
+  background: rgba(79,142,247,0.1);
+  border-color: rgba(79,142,247,0.25);
+  color: var(--blue);
+}
+.detail-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  margin-bottom: 16px;
+}
+.detail-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text3);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.score-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+@media (max-width: 700px) {
+  .score-row { grid-template-columns: repeat(2, 1fr); }
+}
+.score-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.score-item-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  display: flex;
+  justify-content: space-between;
+}
+.score-item-value {
+  font-size: 16px;
+  font-weight: 700;
+}
+.score-bar-lg-track {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.score-bar-lg-fill {
+  height: 100%;
+  border-radius: 3px;
+}
+.contributions-list {
+  list-style: none;
+  counter-reset: contrib;
+}
+.contributions-list li {
+  position: relative;
+  padding: 8px 0 8px 32px;
+  font-size: 14px;
+  color: var(--text2);
+  border-bottom: 1px solid var(--border);
+  line-height: 1.55;
+  counter-increment: contrib;
+}
+.contributions-list li:last-child { border-bottom: none; }
+.contributions-list li::before {
+  content: counter(contrib);
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 20px;
+  height: 20px;
+  background: var(--blue-dim);
+  color: var(--blue);
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.method-panel {
+  background: rgba(79,142,247,0.05);
+  border: 1px solid rgba(79,142,247,0.2);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+{% endblock %}
+
+{% block breadcrumb %}
+<span>›</span> <a href="/papers" style="color: var(--text3);">Papers</a> <span>›</span> Detail
+{% endblock %}
+
+{% block content %}
+
+<!-- ─── Breakthrough callout ───────────────────────────────────────────────── -->
+{% if paper.is_breakthrough %}
+<div class="breakthrough-box" style="margin-bottom: 20px;">
+  <div class="bt-badge">⚡ Breakthrough Paper</div>
+  {% if paper.breakthrough_reason %}
+  <div class="bt-reason">{{ paper.breakthrough_reason }}</div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- ─── Title & Authors ────────────────────────────────────────────────────── -->
+<div class="paper-detail-title">{{ paper.title }}</div>
+
+{% if paper.authors %}
+<div class="author-chips">
+  {% for author in paper.authors %}
+  <a href="/professors?q={{ author }}" class="author-chip">{{ author }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ─── Meta row ──────────────────────────────────────────────────────────── -->
+<div class="meta-row">
+  {% if paper.published_date %}
+  <div class="meta-pill">📅 {{ paper.published_date | fmt_date }}</div>
+  {% endif %}
+  {% if paper.categories %}
+  {% for cat in paper.categories[:3] %}
+  <div class="meta-pill">{{ cat }}</div>
+  {% endfor %}
+  {% endif %}
+  {% if paper.source %}
+  <div class="meta-pill source-pill">{{ paper.source | upper }}</div>
+  {% endif %}
+  {% if paper.citations %}
+  <div class="meta-pill">📚 {{ paper.citations }} citations</div>
+  {% endif %}
+  {% if paper.overall_score %}
+  <div class="meta-pill" style="background: {{ paper.overall_score | score_bg }}; border-color: {{ paper.overall_score | score_color }}; color: {{ paper.overall_score | score_color }};">
+    ★ {{ "%.1f" | format(paper.overall_score) }} / 10
+  </div>
+  {% endif %}
+</div>
+
+<!-- ─── Two-column layout ──────────────────────────────────────────────────── -->
+<div style="display: grid; grid-template-columns: 1fr 320px; gap: 16px;">
+<div>
+
+  <!-- Score breakdown -->
+  {% if paper.novelty_score or paper.impact_score or paper.reproducibility_score or paper.relevance_score %}
+  <div class="detail-section">
+    <div class="detail-section-title">📊 Score Breakdown</div>
+    <div class="score-row">
+      {% set scores = [
+        ('Novelty',          paper.novelty_score,          paper.novelty_score | score_color),
+        ('Impact',           paper.impact_score,           paper.impact_score | score_color),
+        ('Reproducibility',  paper.reproducibility_score,  paper.reproducibility_score | score_color),
+        ('Relevance',        paper.relevance_score,        paper.relevance_score | score_color),
+      ] %}
+      {% for label, val, col in scores %}
+      <div class="score-item">
+        <div class="score-item-label">
+          <span>{{ label }}</span>
+          <span class="score-item-value" style="color: {{ col }};">{{ "%.1f" | format(val) }}</span>
+        </div>
+        <div class="score-bar-lg-track">
+          <div class="score-bar-lg-fill" style="width: {{ val | clamp_pct }}%; background: {{ col }};"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Key Method -->
+  {% if paper.method_name %}
+  <div class="method-panel">
+    <div class="detail-section-title">⬡ Key Method</div>
+    <div style="font-size: 16px; font-weight: 700; color: var(--blue); margin-bottom: 8px;">{{ paper.method_name }}</div>
+    {% if paper.method_description %}
+    <div style="font-size: 14px; color: var(--text2); line-height: 1.65;">{{ paper.method_description }}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- AI Summary -->
+  {% if paper.summary %}
+  <div class="detail-section">
+    <div class="detail-section-title">🤖 AI Summary</div>
+    <div style="font-size: 15px; color: var(--text2); line-height: 1.75; font-style: italic;">
+      "{{ paper.summary }}"
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Key Contributions -->
+  {% if paper.key_contributions %}
+  <div class="detail-section">
+    <div class="detail-section-title">✦ Key Contributions</div>
+    <ol class="contributions-list">
+      {% for contrib in paper.key_contributions %}
+      <li>{{ contrib }}</li>
+      {% endfor %}
+    </ol>
+  </div>
+  {% endif %}
+
+  <!-- Limitations -->
+  {% if paper.limitations %}
+  <div class="detail-section" style="border-color: rgba(247,100,100,0.2); background: rgba(247,100,100,0.03);">
+    <div class="detail-section-title">⚠ Limitations</div>
+    <div style="font-size: 14px; color: var(--text2); line-height: 1.65;">{{ paper.limitations }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Abstract -->
+  {% if paper.abstract %}
+  <div class="detail-section">
+    <div class="detail-section-title">📝 Abstract</div>
+    <div style="font-size: 13.5px; color: var(--text2); line-height: 1.75;">{{ paper.abstract }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Action buttons -->
+  <div class="action-buttons">
+    {% if paper.url %}
+    <a href="{{ paper.url }}" target="_blank" rel="noopener" class="btn btn-primary">
+      🔗 View on arXiv
+    </a>
+    {% endif %}
+    {% if paper.pdf_url %}
+    <a href="{{ paper.pdf_url }}" target="_blank" rel="noopener" class="btn btn-secondary">
+      📄 Download PDF
+    </a>
+    {% endif %}
+    {% if paper.has_code and paper.code_url %}
+    <a href="{{ paper.code_url }}" target="_blank" rel="noopener" class="btn btn-secondary" style="color: var(--green); border-color: rgba(76,175,130,0.4);">
+      ⌥ View Code
+    </a>
+    {% endif %}
+    <a href="/papers" class="btn btn-secondary">← Back to Papers</a>
+  </div>
+
+</div>
+
+<!-- Right sidebar -->
+<div style="display: flex; flex-direction: column; gap: 14px;">
+
+  <!-- Research Directions -->
+  {% if paper.directions %}
+  <div class="detail-section">
+    <div class="detail-section-title">🧭 Research Directions</div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+      {% for d in paper.directions %}
+      <a href="/directions/{{ d }}" class="tag tag-direction" style="font-size: 12px; padding: 5px 13px;">{{ d }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Paper metadata -->
+  <div class="detail-section">
+    <div class="detail-section-title">📋 Paper Info</div>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div>
+        <div style="font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px;">Paper ID</div>
+        <div style="font-size: 12px; color: var(--text2); word-break: break-all; font-family: monospace;">{{ paper.id }}</div>
+      </div>
+      {% if paper.source %}
+      <div>
+        <div style="font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px;">Source</div>
+        <div style="font-size: 13px; color: var(--text2);">{{ paper.source | title }}</div>
+      </div>
+      {% endif %}
+      {% if paper.published_date %}
+      <div>
+        <div style="font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px;">Published</div>
+        <div style="font-size: 13px; color: var(--text2);">{{ paper.published_date | fmt_date }}</div>
+      </div>
+      {% endif %}
+      {% if paper.updated_date %}
+      <div>
+        <div style="font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px;">Updated</div>
+        <div style="font-size: 13px; color: var(--text2);">{{ paper.updated_date | fmt_date }}</div>
+      </div>
+      {% endif %}
+      {% if paper.analyzed_at %}
+      <div>
+        <div style="font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px;">Analyzed</div>
+        <div style="font-size: 12px; color: var(--text3);">{{ paper.analyzed_at.strftime('%Y-%m-%d %H:%M') if paper.analyzed_at else '—' }}</div>
+      </div>
+      {% endif %}
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+        {% if paper.is_read %}
+        <span class="tag tag-direction" style="font-size: 10px;">✓ Read</span>
+        {% endif %}
+        {% if paper.is_starred %}
+        <span class="tag tag-gold" style="font-size: 10px;">★ Starred</span>
+        {% endif %}
+        {% if paper.has_code %}
+        <span class="tag tag-code" style="font-size: 10px;">⌥ Code</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if paper.categories %}
+  <div class="detail-section">
+    <div class="detail-section-title">🏷 Categories</div>
+    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+      {% for cat in paper.categories %}
+      <span class="tag tag-direction" style="font-size: 11px;">{{ cat }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+</div>
+
+{% endblock %}

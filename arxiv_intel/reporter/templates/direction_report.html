@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ direction.name }} — Direction Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Reset & Variables ────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0F1117;
+      --surface:   #1A1D27;
+      --surface2:  #21253A;
+      --border:    #2D3147;
+      --border2:   #3A3F60;
+      --text:      #E8EAF6;
+      --text2:     #9BA3BF;
+      --text3:     #5C6480;
+      --blue:      #4F8EF7;
+      --blue-dim:  #2A4A8A;
+      --gold:      #F5A623;
+      --gold-dim:  #7A5010;
+      --green:     #4CAF82;
+      --green-dim: #1E5C3F;
+      --red:       #F76464;
+      --red-dim:   #7A2020;
+      --purple:    #9B6BF7;
+      --radius:    12px;
+      --radius-sm: 6px;
+      --shadow:    0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      line-height: 1.7;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    a { color: var(--blue); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: #7EB0FF; }
+
+    /* ─── Layout ────────────────────────────────────────────────────────────── */
+    .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+    /* ─── Header ────────────────────────────────────────────────────────────── */
+    .site-header {
+      background: linear-gradient(135deg, #0A0D1A 0%, #141828 60%, #0F1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 0 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .site-header::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -100px;
+      width: 350px; height: 350px;
+      background: radial-gradient(circle, rgba(155,107,247,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text3);
+      margin-bottom: 20px;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--blue); }
+
+    .header-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 10px;
+    }
+
+    .header-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(26px, 5vw, 40px);
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.15;
+      margin-bottom: 14px;
+    }
+
+    .header-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ─── Status badge ──────────────────────────────────────────────────────── */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: 1px solid;
+    }
+    .status-emerging  { background: rgba(76,175,130,0.1);  color: var(--green);  border-color: rgba(76,175,130,0.3); }
+    .status-stable    { background: rgba(79,142,247,0.1);  color: var(--blue);   border-color: rgba(79,142,247,0.3); }
+    .status-declining { background: rgba(247,100,100,0.1); color: var(--red);    border-color: rgba(247,100,100,0.3); }
+    .status-dead      { background: rgba(92,100,128,0.1);  color: var(--text3);  border-color: rgba(92,100,128,0.3); }
+
+    /* ─── Main ──────────────────────────────────────────────────────────────── */
+    .main { padding-top: 48px; }
+
+    /* ─── Sections ──────────────────────────────────────────────────────────── */
+    .section { margin-bottom: 52px; }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, var(--border), transparent);
+    }
+    .section-label-text {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+
+    /* ─── Worthiness score ──────────────────────────────────────────────────── */
+    .worthiness-block {
+      display: flex;
+      gap: 28px;
+      align-items: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+    .worthiness-circle-wrap {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .worthiness-circle {
+      width: 96px; height: 96px;
+      border-radius: 50%;
+      border: 3px solid;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      line-height: 1;
+    }
+    .worthiness-num {
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .worthiness-denom {
+      font-size: 12px;
+      color: var(--text3);
+      font-weight: 500;
+    }
+    .worthiness-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+    .worthiness-text {
+      flex: 1;
+    }
+    .worthiness-text h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .worthiness-text p {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.7;
+    }
+
+    /* ─── Overview ──────────────────────────────────────────────────────────── */
+    .overview-text {
+      font-size: 15px;
+      color: var(--text2);
+      line-height: 1.75;
+    }
+    .overview-text p { margin-bottom: 14px; }
+    .overview-text p:last-child { margin-bottom: 0; }
+
+    /* ─── Milestones timeline ───────────────────────────────────────────────── */
+    .timeline { position: relative; padding-left: 28px; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 6px; top: 0; bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--blue-dim), var(--border), transparent);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 24px;
+    }
+    .timeline-item:last-child { margin-bottom: 0; }
+    .timeline-dot {
+      position: absolute;
+      left: -25px;
+      top: 5px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--blue);
+      border: 2px solid var(--bg);
+      box-shadow: 0 0 0 2px var(--blue-dim);
+    }
+    .timeline-date {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--blue);
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+    .timeline-event {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    /* ─── Key papers ────────────────────────────────────────────────────────── */
+    .paper-compact-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .paper-compact {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      transition: border-color 0.2s;
+    }
+    .paper-compact:hover { border-color: var(--border2); }
+
+    .paper-compact-num {
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--blue-dim);
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .paper-compact-body { flex: 1; min-width: 0; }
+    .paper-compact-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+    .paper-compact-title a { color: var(--text); }
+    .paper-compact-title a:hover { color: var(--blue); }
+    .paper-compact-meta {
+      font-size: 12px;
+      color: var(--text3);
+    }
+
+    /* ─── Open problems ─────────────────────────────────────────────────────── */
+    .problems-list { list-style: none; }
+    .problem-item {
+      display: flex;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .problem-item:last-child { border-bottom: none; }
+    .problem-icon {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      border-radius: var(--radius-sm);
+      background: rgba(155,107,247,0.12);
+      color: var(--purple);
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .problem-text {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.6;
+      padding-top: 4px;
+    }
+
+    /* ─── Related directions ────────────────────────────────────────────────── */
+    .related-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .related-chip {
+      display: inline-flex;
+      align-items: center;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 500;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .related-chip:hover {
+      border-color: var(--purple);
+      color: var(--purple);
+      background: rgba(155,107,247,0.07);
+    }
+
+    /* ─── Trend indicator ───────────────────────────────────────────────────── */
+    .trend-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 100px;
+      border: 1px solid;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* ─── Key authors ───────────────────────────────────────────────────────── */
+    .authors-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .author-chip {
+      display: inline-flex;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 500;
+      transition: border-color 0.2s;
+    }
+    .author-chip a { color: var(--text); }
+    .author-chip:hover { border-color: var(--blue-dim); }
+    .author-chip a:hover { color: var(--blue); }
+
+    /* ─── Footer ────────────────────────────────────────────────────────────── */
+    .site-footer {
+      margin-top: 80px;
+      padding: 28px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+    .footer-powered { font-size: 12px; color: var(--text3); }
+    .footer-powered a { color: var(--blue); }
+    .footer-ts { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+    @media (max-width: 600px) {
+      .worthiness-block { flex-direction: column; align-items: center; }
+      .worthiness-text { text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Header ──────────────────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="container">
+      <a class="back-link" href="../">← Back to Reports</a>
+      <div class="header-eyebrow">Direction Analysis</div>
+      <h1 class="header-title">{{ direction.name }}</h1>
+
+      <div class="header-meta">
+        <!-- Status badge -->
+        {% set status = direction.status | lower %}
+        <span class="status-badge status-{{ status }}">
+          {% if status == 'emerging' %}↑ Emerging
+          {% elif status == 'stable' %}● Stable
+          {% elif status == 'declining' %}↓ Declining
+          {% elif status == 'dead' %}✕ Dead
+          {% else %}{{ direction.status }}
+          {% endif %}
+        </span>
+
+        <!-- Trend arrow -->
+        {% if status == 'emerging' %}
+        <span class="trend-indicator" style="color: var(--green); border-color: rgba(76,175,130,0.3);">
+          ▲ Rising momentum
+        </span>
+        {% elif status == 'declining' or status == 'dead' %}
+        <span class="trend-indicator" style="color: var(--red); border-color: rgba(247,100,100,0.3);">
+          ▼ Losing traction
+        </span>
+        {% endif %}
+
+        {% if direction.aliases %}
+        <span style="font-size:12px; color:var(--text3);">
+          Also known as:
+          {% for alias in direction.aliases %}
+          <em>{{ alias }}</em>{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        </span>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── Main ────────────────────────────────────────────────────────────── -->
+  <main class="main">
+    <div class="container">
+
+      <!-- ── Worthiness Rating ────────────────────────────────────────────── -->
+      <section class="section" id="worthiness">
+        <div class="section-label">
+          <span class="section-label-text">Worthiness Rating</span>
+        </div>
+
+        {% set wscore = direction.worthiness_score %}
+        {% set wscore_color = wscore | score_color_css %}
+        <div class="worthiness-block">
+          <div class="worthiness-circle-wrap">
+            <div class="worthiness-circle"
+                 style="color: {{ wscore_color }}; border-color: {{ wscore_color }}; background: {{ wscore_color }}12;">
+              <span class="worthiness-num">{{ "%.1f" | format(wscore) }}</span>
+              <span class="worthiness-denom">/ 10</span>
+            </div>
+            <div class="worthiness-label">Worthiness</div>
+          </div>
+          <div class="worthiness-text">
+            <h3>Is this direction worth pursuing?</h3>
+            <p>
+              {% if direction.worthiness_reasoning %}
+                {{ direction.worthiness_reasoning }}
+              {% else %}
+                No worthiness reasoning recorded for this direction.
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Overview ─────────────────────────────────────────────────────── -->
+      {% if direction.overview %}
+      <section class="section" id="overview">
+        <div class="section-label">
+          <span class="section-label-text">Overview</span>
+        </div>
+        <div class="overview-text">
+          {% for para in direction.overview.split('\n\n') %}
+          <p>{{ para }}</p>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- ── Key Authors ───────────────────────────────────────────────────── -->
+      {% if direction.key_authors %}
+      <section class="section" id="key-authors">
+        <div class="section-label">
+          <span class="section-label-text">Key Authors</span>
+        </div>
+        <div class="authors-wrap">
+          {% for author in direction.key_authors %}
+          <span class="author-chip">
+            <a href="https://scholar.google.com/scholar?q={{ author | urlencode }}"
+               target="_blank" rel="noopener">{{ author }}</a>
+          </span>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- ── Milestones Timeline ───────────────────────────────────────────── -->
+      {% if direction.milestones %}
+      <section class="section" id="milestones">
+        <div class="section-label">
+          <span class="section-label-text">Milestones Timeline</span>
+        </div>
+        <div class="timeline">
+          {% for milestone in direction.milestones %}
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-date">{{ milestone.date }}</div>
+            <div class="timeline-event">{{ milestone.event }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- ── Key Papers ────────────────────────────────────────────────────── -->
+      {% if key_papers %}
+      <section class="section" id="key-papers">
+        <div class="section-label">
+          <span class="section-label-text">Key Papers</span>
+        </div>
+        <div class="paper-compact-list">
+          {% for paper in key_papers %}
+          <div class="paper-compact">
+            <div class="paper-compact-num">{{ loop.index }}</div>
+            <div class="paper-compact-body">
+              <div class="paper-compact-title">
+                <a href="{{ paper.url }}" target="_blank" rel="noopener">{{ paper.title }}</a>
+              </div>
+              <div class="paper-compact-meta">
+                {% if paper.authors %}
+                  {{ paper.authors[:3] | join(', ') }}{% if paper.authors | length > 3 %} et al.{% endif %}
+                {% endif %}
+                {% if paper.published_date %}
+                  &nbsp;·&nbsp;{{ paper.published_date.year }}
+                {% endif %}
+                {% if paper.overall_score > 0 %}
+                  &nbsp;·&nbsp;Score: <span style="color: {{ paper.overall_score | score_color_css }};">{{ "%.1f" | format(paper.overall_score) }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% elif direction.key_papers %}
+      <section class="section" id="key-papers">
+        <div class="section-label">
+          <span class="section-label-text">Key Paper IDs</span>
+        </div>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:6px;">
+          {% for pid in direction.key_papers %}
+          <li style="font-size:13px; color:var(--text2); font-family:monospace;">{{ pid }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+
+      <!-- ── Open Problems ─────────────────────────────────────────────────── -->
+      {% if direction.open_problems %}
+      <section class="section" id="open-problems">
+        <div class="section-label">
+          <span class="section-label-text">Open Problems</span>
+        </div>
+        <ul class="problems-list">
+          {% for problem in direction.open_problems %}
+          <li class="problem-item">
+            <div class="problem-icon">{{ loop.index }}</div>
+            <div class="problem-text">{{ problem }}</div>
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+
+      <!-- ── Related Directions ────────────────────────────────────────────── -->
+      {% if direction.related_directions %}
+      <section class="section" id="related">
+        <div class="section-label">
+          <span class="section-label-text">Related Directions</span>
+        </div>
+        <div class="related-chips">
+          {% for rel in direction.related_directions %}
+          <a class="related-chip"
+             href="./{{ rel | slugify }}.html">{{ rel }}</a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+    </div>
+  </main>
+
+  <!-- ─── Footer ──────────────────────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-powered">
+        Powered by <a href="https://www.anthropic.com/claude" target="_blank" rel="noopener">Claude</a>
+        &nbsp;·&nbsp;
+        <a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a>
+      </div>
+      <div class="footer-ts">Generated {{ generated_at }}</div>
+    </div>
+  </footer>
+
+</body>
+</html>

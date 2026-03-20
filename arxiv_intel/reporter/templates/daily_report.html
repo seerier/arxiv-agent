@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Research Intelligence — {{ report.date }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0F1117;
+      --surface:     #1A1D27;
+      --surface2:    #21253A;
+      --border:      #2D3147;
+      --border2:     #3A3F60;
+      --text:        #E8EAF6;
+      --text2:       #9BA3BF;
+      --text3:       #5C6480;
+      --blue:        #4F8EF7;
+      --blue-dim:    #2A4A8A;
+      --gold:        #F5A623;
+      --gold-dim:    #7A5010;
+      --green:       #4CAF82;
+      --green-dim:   #1E5C3F;
+      --red:         #F76464;
+      --red-dim:     #7A2020;
+      --purple:      #9B6BF7;
+      --radius:      12px;
+      --radius-sm:   6px;
+      --shadow:      0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      line-height: 1.7;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    a { color: var(--blue); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: #7EB0FF; text-decoration: underline; }
+
+    /* ─── Layout ────────────────────────────────────────────────────────────── */
+    .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+    /* ─── Header ────────────────────────────────────────────────────────────── */
+    .site-header {
+      background: linear-gradient(135deg, #0A0D1A 0%, #141828 50%, #0F1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 0 36px;
+      position: relative;
+      overflow: hidden;
+    }
+    .site-header::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -80px;
+      width: 320px; height: 320px;
+      background: radial-gradient(circle, rgba(79,142,247,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .site-header::after {
+      content: '';
+      position: absolute;
+      bottom: -40px; left: -60px;
+      width: 220px; height: 220px;
+      background: radial-gradient(circle, rgba(245,166,35,0.05) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .header-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 10px;
+    }
+
+    .header-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+    .header-title span { color: var(--blue); }
+
+    .header-date {
+      margin-top: 8px;
+      font-size: 15px;
+      color: var(--text2);
+      font-weight: 400;
+    }
+
+    .stats-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 24px;
+    }
+    .stat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text2);
+    }
+    .stat-pill .stat-num { color: var(--text); font-weight: 600; }
+
+    /* ─── Main content ──────────────────────────────────────────────────────── */
+    .main { padding-top: 48px; }
+
+    /* ─── Section headings ──────────────────────────────────────────────────── */
+    .section { margin-bottom: 56px; }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, var(--border), transparent);
+    }
+    .section-label-text {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+    .section-label-icon {
+      font-size: 14px;
+    }
+
+    /* ─── Breakthrough callout ──────────────────────────────────────────────── */
+    .breakthrough-box {
+      position: relative;
+      background: linear-gradient(135deg, rgba(245,166,35,0.06) 0%, rgba(245,166,35,0.02) 100%);
+      border: 1px solid var(--gold-dim);
+      border-left: 4px solid var(--gold);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      margin-bottom: 48px;
+      overflow: hidden;
+    }
+    .breakthrough-box::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 160px; height: 160px;
+      background: radial-gradient(circle, rgba(245,166,35,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .bt-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--gold);
+      color: #0F1117;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border-radius: 100px;
+      padding: 4px 12px;
+      margin-bottom: 12px;
+    }
+    .bt-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: 8px;
+    }
+    .bt-title a { color: var(--gold); }
+    .bt-title a:hover { color: #FFCC77; }
+    .bt-reason {
+      font-size: 14px;
+      color: var(--text2);
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    /* ─── Paper cards ───────────────────────────────────────────────────────── */
+    .paper-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 26px;
+      margin-bottom: 16px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .paper-card:hover {
+      border-color: var(--border2);
+      box-shadow: var(--shadow);
+    }
+    .paper-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 2px;
+      background: linear-gradient(to right, var(--blue-dim), transparent);
+    }
+
+    .paper-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .score-badge {
+      flex-shrink: 0;
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
+      border: 2px solid;
+      line-height: 1;
+    }
+
+    .paper-meta { flex: 1; min-width: 0; }
+
+    .paper-rank {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 4px;
+    }
+
+    .paper-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.35;
+      margin-bottom: 6px;
+    }
+    .paper-title a { color: var(--text); }
+    .paper-title a:hover { color: var(--blue); text-decoration: none; }
+
+    .paper-authors {
+      font-size: 13px;
+      color: var(--text2);
+    }
+    .paper-authors a {
+      color: var(--text2);
+    }
+    .paper-authors a:hover { color: var(--blue); }
+
+    .paper-card-body { margin-top: 14px; }
+
+    .method-badge {
+      display: inline-flex;
+      align-items: center;
+      background: var(--blue-dim);
+      color: var(--blue);
+      border: 1px solid rgba(79,142,247,0.2);
+      border-radius: var(--radius-sm);
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+
+    .paper-summary {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.65;
+      margin-bottom: 14px;
+    }
+
+    .contributions-list {
+      list-style: none;
+      margin-bottom: 14px;
+    }
+    .contributions-list li {
+      position: relative;
+      padding-left: 18px;
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 5px;
+    }
+    .contributions-list li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: var(--green);
+      font-size: 11px;
+      top: 1px;
+    }
+
+    .paper-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 100px;
+      padding: 3px 11px;
+      font-size: 11px;
+      font-weight: 500;
+      border: 1px solid;
+    }
+    .tag-direction {
+      background: rgba(79,142,247,0.08);
+      color: var(--blue);
+      border-color: rgba(79,142,247,0.2);
+    }
+    .tag-code {
+      background: rgba(76,175,130,0.1);
+      color: var(--green);
+      border-color: rgba(76,175,130,0.25);
+    }
+    .tag-code a { color: var(--green); }
+    .tag-code a:hover { color: #7EE0B5; }
+
+    /* ─── Score sub-bars ────────────────────────────────────────────────────── */
+    .score-bars {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .score-bar-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .score-bar-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text3);
+    }
+    .score-bar-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    /* ─── Trending topics ───────────────────────────────────────────────────── */
+    .trending-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .trend-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .trend-chip:hover {
+      border-color: var(--blue-dim);
+      background: var(--surface2);
+    }
+    .trend-count {
+      background: var(--border);
+      color: var(--text3);
+      border-radius: 100px;
+      padding: 1px 8px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    /* ─── Code releases ─────────────────────────────────────────────────────── */
+    .code-list { list-style: none; }
+    .code-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .code-item:last-child { border-bottom: none; }
+    .code-icon {
+      width: 32px; height: 32px;
+      background: var(--green-dim);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .code-item-title {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .code-item-title a { color: var(--text); }
+    .code-item-title a:hover { color: var(--green); }
+    .code-link {
+      font-size: 12px;
+      color: var(--green);
+      font-weight: 500;
+    }
+    .code-link:hover { color: #7EE0B5; }
+
+    /* ─── Footer ────────────────────────────────────────────────────────────── */
+    .site-footer {
+      margin-top: 80px;
+      padding: 32px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+    .footer-powered {
+      font-size: 12px;
+      color: var(--text3);
+      margin-bottom: 4px;
+    }
+    .footer-powered a { color: var(--blue); }
+    .footer-ts {
+      font-size: 11px;
+      color: var(--text3);
+    }
+
+    /* ─── Responsive ────────────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .paper-card { padding: 18px 16px; }
+      .paper-card-header { gap: 12px; }
+      .score-badge { width: 44px; height: 44px; font-size: 13px; }
+      .score-bars { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Header ──────────────────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="container">
+      <div class="header-eyebrow">{% if period == 'weekly' %}Weekly Digest{% elif period == 'monthly' %}Monthly Digest{% else %}Daily Digest{% endif %}</div>
+      <h1 class="header-title">
+        Research <span>Intelligence</span>
+      </h1>
+      <div class="header-date">
+        {{ report.date.strftime('%A, %B %-d, %Y') if report.date else '' }}
+      </div>
+
+      <div class="stats-bar">
+        {% if db_stats %}
+          {% if db_stats.get('total_papers') %}
+          <div class="stat-pill">
+            <span class="stat-num">{{ db_stats['total_papers'] | int }}</span>
+            papers in database
+          </div>
+          {% endif %}
+          {% if db_stats.get('categories') %}
+          <div class="stat-pill">
+            <span class="stat-num">{{ db_stats['categories'] | int }}</span>
+            categories tracked
+          </div>
+          {% endif %}
+          {% if db_stats.get('analyzed_today') %}
+          <div class="stat-pill">
+            <span class="stat-num">{{ db_stats['analyzed_today'] | int }}</span>
+            analyzed today
+          </div>
+          {% endif %}
+        {% endif %}
+        <div class="stat-pill">
+          <span class="stat-num">{{ top_papers | length }}</span>
+          featured papers
+        </div>
+        {% if report.trending_topics %}
+        <div class="stat-pill">
+          <span class="stat-num">{{ report.trending_topics | length }}</span>
+          trending topics
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── Main ────────────────────────────────────────────────────────────── -->
+  <main class="main">
+    <div class="container">
+
+      <!-- ── Breakthrough callout ─────────────────────────────────────────── -->
+      {% if breakthrough %}
+      <div class="breakthrough-box" id="breakthrough">
+        <div class="bt-badge">⚡ Breakthrough</div>
+        <div class="bt-title">
+          <a href="{{ breakthrough.url }}" target="_blank" rel="noopener">
+            {{ breakthrough.title }}
+          </a>
+        </div>
+        {% if breakthrough.breakthrough_reason %}
+        <div class="bt-reason">{{ breakthrough.breakthrough_reason }}</div>
+        {% elif breakthrough.summary %}
+        <div class="bt-reason">{{ breakthrough.summary }}</div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- ── Top Papers ───────────────────────────────────────────────────── -->
+      <section class="section" id="top-papers">
+        <div class="section-label">
+          <span class="section-label-icon">◆</span>
+          <span class="section-label-text">Top Papers Today</span>
+        </div>
+
+        {% for paper in top_papers %}
+        {% set score = paper.overall_score %}
+        {% set score_color = score | score_color_css %}
+        <article class="paper-card" id="paper-{{ loop.index }}">
+          <div class="paper-card-header">
+            <!-- Score badge -->
+            <div class="score-badge" style="color: {{ score_color }}; border-color: {{ score_color }};">
+              {{ "%.1f" | format(score) }}
+            </div>
+
+            <div class="paper-meta">
+              <div class="paper-rank">#{{ loop.index }} Must-Read</div>
+              <h2 class="paper-title">
+                <a href="{{ paper.url }}" target="_blank" rel="noopener">{{ paper.title }}</a>
+              </h2>
+              <div class="paper-authors">
+                {% for author in paper.authors[:4] %}
+                  <a href="https://scholar.google.com/scholar?q={{ author | urlencode }}" target="_blank" rel="noopener">{{ author }}</a>{% if not loop.last %},&nbsp;{% endif %}
+                {% endfor %}
+                {% if paper.authors | length > 4 %}
+                  <span style="color: var(--text3);">&nbsp;+{{ paper.authors | length - 4 }} more</span>
+                {% endif %}
+                {% if paper.published_date %}
+                  &nbsp;·&nbsp;
+                  <span style="color: var(--text3);">{{ paper.published_date.strftime('%b %-d, %Y') if paper.published_date else '' }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="paper-card-body">
+            {% if paper.method_name %}
+            <div class="method-badge">⬡ {{ paper.method_name }}</div>
+            {% endif %}
+
+            {% if paper.summary %}
+            <p class="paper-summary">{{ paper.summary }}</p>
+            {% endif %}
+
+            {% if paper.key_contributions %}
+            <ul class="contributions-list">
+              {% for contrib in paper.key_contributions[:4] %}
+              <li>{{ contrib }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+
+            <!-- Score sub-bars -->
+            <div class="score-bars">
+              {% set sub_scores = [
+                ('Novelty',        paper.novelty_score),
+                ('Impact',         paper.impact_score),
+                ('Reproducibility',paper.reproducibility_score),
+                ('Relevance',      paper.relevance_score),
+              ] %}
+              {% for label, val in sub_scores %}
+              <div class="score-bar-item">
+                <div class="score-bar-label">{{ label }}</div>
+                <div class="score-bar-track">
+                  <div class="score-bar-fill"
+                       style="width: {{ (val / 10 * 100) | round(1) }}%; background: {{ val | score_color_css }};"></div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+
+            <!-- Tags: directions + code -->
+            <div class="paper-tags">
+              {% for direction in paper.directions[:5] %}
+              <span class="tag tag-direction">{{ direction }}</span>
+              {% endfor %}
+
+              {% if paper.has_code and paper.code_url %}
+              <span class="tag tag-code">
+                &#x25CF;&nbsp;<a href="{{ paper.code_url }}" target="_blank" rel="noopener">Code</a>
+              </span>
+              {% endif %}
+
+              {% if paper.pdf_url %}
+              <span class="tag tag-direction">
+                <a href="{{ paper.pdf_url }}" target="_blank" rel="noopener" style="color: inherit;">PDF</a>
+              </span>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+        {% else %}
+        <p style="color: var(--text3); text-align: center; padding: 32px 0;">No papers featured today.</p>
+        {% endfor %}
+      </section>
+
+      <!-- ── Trending Topics ──────────────────────────────────────────────── -->
+      {% if report.trending_topics %}
+      <section class="section" id="trending">
+        <div class="section-label">
+          <span class="section-label-icon">◈</span>
+          <span class="section-label-text">Trending Topics</span>
+        </div>
+        <div class="trending-grid">
+          {% for topic in report.trending_topics %}
+          <span class="trend-chip">
+            {{ topic }}
+            {% if topic_counts and topic_counts.get(topic) %}
+            <span class="trend-count">{{ topic_counts[topic] }}</span>
+            {% endif %}
+          </span>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- ── New Code Releases ────────────────────────────────────────────── -->
+      {% if papers_with_code %}
+      <section class="section" id="code-releases">
+        <div class="section-label">
+          <span class="section-label-icon">◇</span>
+          <span class="section-label-text">New Code Releases</span>
+        </div>
+        <ul class="code-list">
+          {% for paper in papers_with_code %}
+          <li class="code-item">
+            <div class="code-icon">⌥</div>
+            <div class="code-item-title">
+              <a href="{{ paper.url }}" target="_blank" rel="noopener">{{ paper.title }}</a>
+            </div>
+            <a class="code-link" href="{{ paper.code_url }}" target="_blank" rel="noopener">GitHub →</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+
+    </div>
+  </main>
+
+  <!-- ─── Footer ──────────────────────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-powered">
+        Powered by <a href="https://www.anthropic.com/claude" target="_blank" rel="noopener">Claude</a>
+        &nbsp;·&nbsp;
+        <a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a>
+      </div>
+      <div class="footer-ts">Generated {{ generated_at }}</div>
+    </div>
+  </footer>
+
+</body>
+</html>

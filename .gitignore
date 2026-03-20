@@ -1,0 +1,62 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Database (local data — not committed)
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Generated reports
+reports/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+*.whl
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Conda
+.conda/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# Logs
+*.log
+logs/
+
+# Sentence-transformers model cache (large, downloaded automatically)
+# Uncomment the next line if you don't want to commit the cache
+# ~/.cache/huggingface/

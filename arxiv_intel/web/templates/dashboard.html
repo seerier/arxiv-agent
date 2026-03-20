@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_styles %}
+.dir-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.dir-bar-label {
+  font-size: 12px;
+  color: var(--text2);
+  width: 160px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dir-bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.dir-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--blue-dim), var(--blue));
+}
+.dir-bar-count {
+  font-size: 11px;
+  color: var(--text3);
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+.report-list { list-style: none; }
+.report-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+.report-item:last-child { border-bottom: none; }
+.report-icon {
+  width: 28px; height: 28px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.report-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text2);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.report-name a { color: var(--text2); }
+.report-name a:hover { color: var(--blue); }
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+@media (max-width: 1100px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+}
+{% endblock %}
+
+{% block breadcrumb %}<span>›</span> Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Research Intelligence Dashboard</h1>
+  <div class="page-subtitle">Real-time overview of your arxiv paper database</div>
+</div>
+
+<!-- ─── Stats Row ──────────────────────────────────────────────────────────── -->
+<div class="stats-row">
+  <div class="stat-card" style="--accent: var(--blue);">
+    <div class="stat-card-icon">📄</div>
+    <div class="stat-card-value">{{ stats.total_papers | default(0) }}</div>
+    <div class="stat-card-label">Total Papers</div>
+    <div class="stat-card-sub">
+      {% if stats.papers_today %}+{{ stats.papers_today }} today{% else %}in database{% endif %}
+    </div>
+  </div>
+
+  <div class="stat-card" style="--accent: var(--green);">
+    <div class="stat-card-icon">🔬</div>
+    <div class="stat-card-value">{{ stats.analyzed_papers | default(0) }}</div>
+    <div class="stat-card-label">Analyzed</div>
+    <div class="stat-card-sub">
+      {% if stats.total_papers %}
+        {{ ((stats.analyzed_papers / stats.total_papers) * 100) | round(0) | int }}% coverage
+      {% else %}—{% endif %}
+    </div>
+  </div>
+
+  <div class="stat-card" style="--accent: var(--gold);">
+    <div class="stat-card-icon">⚡</div>
+    <div class="stat-card-value">{{ stats.breakthrough_papers | default(0) }}</div>
+    <div class="stat-card-label">Breakthroughs</div>
+    <div class="stat-card-sub">Avg score: {{ "%.1f" | format(stats.avg_overall_score | default(0)) }}</div>
+  </div>
+
+  <div class="stat-card" style="--accent: var(--purple);">
+    <div class="stat-card-icon">🧭</div>
+    <div class="stat-card-value">{{ stats.directions_count | default(0) }}</div>
+    <div class="stat-card-label">Directions</div>
+    <div class="stat-card-sub">
+      {% if stats.emerging_directions %}{{ stats.emerging_directions }} emerging{% else %}tracked{% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ─── Breakthrough Alert ─────────────────────────────────────────────────── -->
+{% if breakthroughs %}
+<div class="breakthrough-box">
+  <div class="bt-badge">⚡ Breakthrough Alert</div>
+  <div class="bt-title">
+    <a href="/papers/{{ breakthroughs[0].id }}">{{ breakthroughs[0].title }}</a>
+  </div>
+  {% if breakthroughs[0].breakthrough_reason %}
+  <div class="bt-reason">{{ breakthroughs[0].breakthrough_reason }}</div>
+  {% elif breakthroughs[0].summary %}
+  <div class="bt-reason">{{ breakthroughs[0].summary }}</div>
+  {% endif %}
+  {% if breakthroughs | length > 1 %}
+  <div style="margin-top: 10px; font-size: 12px; color: var(--gold);">
+    + {{ breakthroughs | length - 1 }} more breakthrough{{ 's' if breakthroughs | length > 2 else '' }} in the last 7 days
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- ─── Main grid: Top Papers + Side panels ─────────────────────────────────── -->
+<div class="dashboard-grid">
+
+  <!-- Left: Top Papers -->
+  <div>
+    <div class="section-header">
+      <div class="section-title">◆ Today's Top Papers</div>
+      <a href="/papers" class="section-link">View all →</a>
+    </div>
+
+    {% if top_papers %}
+      {% for paper in top_papers %}
+      {% set sc = paper.overall_score %}
+      <div class="paper-card">
+        <div class="paper-card-header">
+          <div class="score-badge" style="color: {{ sc | score_color }}; border-color: {{ sc | score_color }}; background: {{ sc | score_bg }};">
+            {{ "%.1f" | format(sc) }}
+          </div>
+          <div class="paper-meta">
+            <div style="font-size: 10px; color: var(--text3); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px;">
+              #{{ loop.index }} Must-Read
+            </div>
+            <div class="paper-title">
+              <a href="/papers/{{ paper.id }}" title="{{ paper.title }}">{{ paper.title | truncate_text(120) }}</a>
+            </div>
+            <div class="paper-authors">
+              {% for author in paper.authors[:3] %}
+                <a href="/professors?q={{ author }}">{{ author }}</a>{% if not loop.last %},&nbsp;{% endif %}
+              {% endfor %}
+              {% if paper.authors | length > 3 %}<span style="color: var(--text3);"> +{{ paper.authors | length - 3 }} more</span>{% endif %}
+              {% if paper.published_date %}&nbsp;·&nbsp;<span style="color: var(--text3);">{{ paper.published_date | fmt_date }}</span>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        {% if paper.method_name %}<div class="method-badge">⬡ {{ paper.method_name }}</div>{% endif %}
+
+        {% if paper.summary %}
+        <div class="paper-summary">{{ paper.summary | truncate_text(180) }}</div>
+        {% endif %}
+
+        <div class="paper-tags">
+          {% for d in paper.directions[:4] %}
+          <a href="/directions/{{ d }}" class="tag tag-direction">{{ d }}</a>
+          {% endfor %}
+          {% if paper.has_code %}<span class="tag tag-code">⌥ Code</span>{% endif %}
+          {% if paper.is_breakthrough %}<span class="tag tag-gold">⚡ Breakthrough</span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">📄</div>
+      <div class="empty-state-title">No papers yet</div>
+      <div class="empty-state-text">Run the arxiv fetcher to populate the database.</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: Trending Directions + Reports -->
+  <div style="display: flex; flex-direction: column; gap: 20px;">
+
+    <!-- Trending Directions bar chart -->
+    <div class="card" style="padding: 20px 22px;">
+      <div class="section-header" style="margin-bottom: 16px;">
+        <div class="section-title">◈ Trending Directions</div>
+        <a href="/directions" class="section-link">All →</a>
+      </div>
+
+      {% if dir_counts_sorted %}
+        {% for name, count in dir_counts_sorted[:8] %}
+        <div class="dir-bar-row">
+          <div class="dir-bar-label" title="{{ name }}">
+            <a href="/directions/{{ name }}" style="color: var(--text2); text-decoration: none;">{{ name }}</a>
+          </div>
+          <div class="dir-bar-track">
+            <div class="dir-bar-fill" style="width: {{ ((count / max_count) * 100) | round(1) }}%;"></div>
+          </div>
+          <div class="dir-bar-count">{{ count }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div style="color: var(--text3); font-size: 13px; text-align: center; padding: 20px 0;">
+        No directions analyzed yet.
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Recent Reports -->
+    <div class="card" style="padding: 20px 22px;">
+      <div class="section-header" style="margin-bottom: 14px;">
+        <div class="section-title">◇ Recent Reports</div>
+      </div>
+
+      {% if recent_reports %}
+      <ul class="report-list">
+        {% for rpt in recent_reports %}
+        <li class="report-item">
+          <div class="report-icon">📋</div>
+          <div class="report-name">
+            <a href="/static/reports/{{ rpt.name }}" target="_blank" title="{{ rpt.name }}">
+              {{ rpt.stem | replace('_', ' ') | title }}
+            </a>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div style="color: var(--text3); font-size: 13px; text-align: center; padding: 16px 0;">
+        No reports generated yet.
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Database summary -->
+    <div class="card" style="padding: 18px 22px;">
+      <div class="section-title" style="margin-bottom: 14px;">◆ Database</div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        {% set items = [
+          ('Papers with Code', stats.papers_with_code | default(0), 'var(--green)'),
+          ('Professors Tracked', stats.professors_count | default(0), 'var(--blue)'),
+          ('Reports Generated', stats.reports_count | default(0), 'var(--gold)'),
+        ] %}
+        {% for label, val, color in items %}
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 13px; color: var(--text2);">{{ label }}</span>
+          <span style="font-size: 14px; font-weight: 700; color: {{ color }};">{{ val }}</span>
+        </div>
+        {% endfor %}
+        {% if stats.latest_paper_date %}
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 13px; color: var(--text2);">Latest Paper</span>
+          <span style="font-size: 12px; color: var(--text3);">{{ stats.latest_paper_date }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

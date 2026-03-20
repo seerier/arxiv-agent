@@ -1,0 +1,45 @@
+# Arxiv Intelligence System Configuration
+# ---------------------------------------------------------------------------
+# All settings can be overridden by environment variables.
+# ANTHROPIC_API_KEY must be set in the environment (not stored here).
+# ---------------------------------------------------------------------------
+
+# ── Paper Ingestion ─────────────────────────────────────────────────────────
+categories:
+  - cs.AI
+  - cs.LG
+  - cs.CV
+  - cs.GR
+  - eess.IV
+
+custom_queries:
+  - event camera
+  - neuromorphic
+  - DVS
+  - dynamic vision sensor
+
+max_papers_per_run: 200
+
+# ── Scheduling ───────────────────────────────────────────────────────────────
+# Cron-style daily run time (HH:MM, 24-hour clock, local time)
+schedule_time: "08:00"
+
+# ── Claude AI ────────────────────────────────────────────────────────────────
+claude_model: claude-sonnet-4-6
+
+# ── File Paths ───────────────────────────────────────────────────────────────
+report_dir: ./reports
+db_path: ./data/papers.db
+
+# ── Report Generation ────────────────────────────────────────────────────────
+top_papers_in_digest: 5
+report_max_words: 800
+
+# ── Data Sources ─────────────────────────────────────────────────────────────
+sources:
+  arxiv: true
+  paperswithcode: true
+  semantic_scholar: true    # S2 API key configured in .env → higher rate limits
+
+# ── Logging ──────────────────────────────────────────────────────────────────
+log_level: INFO

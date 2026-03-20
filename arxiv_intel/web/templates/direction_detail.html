@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+{% block title %}{{ direction.name }}{% endblock %}
+
+{% block extra_styles %}
+.direction-detail-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(22px, 4vw, 34px);
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+.worthiness-large {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 16px;
+}
+.worthiness-ring-lg {
+  flex-shrink: 0;
+  width: 90px;
+  height: 90px;
+  position: relative;
+}
+.worthiness-ring-lg svg {
+  width: 90px;
+  height: 90px;
+  transform: rotate(-90deg);
+}
+.worthiness-ring-lg-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+}
+.worthiness-score-big {
+  font-size: 24px;
+  font-weight: 800;
+}
+.worthiness-label-sm {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+}
+.worthiness-reasoning {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.7;
+}
+.detail-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  margin-bottom: 16px;
+}
+.detail-panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text3);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.open-problems-list {
+  list-style: none;
+  counter-reset: problem;
+}
+.open-problems-list li {
+  position: relative;
+  padding: 10px 0 10px 36px;
+  font-size: 14px;
+  color: var(--text2);
+  border-bottom: 1px solid var(--border);
+  line-height: 1.55;
+  counter-increment: problem;
+}
+.open-problems-list li:last-child { border-bottom: none; padding-bottom: 0; }
+.open-problems-list li::before {
+  content: counter(problem);
+  position: absolute;
+  left: 0; top: 10px;
+  width: 22px; height: 22px;
+  background: rgba(79,142,247,0.12);
+  color: var(--blue);
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.timeline {
+  position: relative;
+  padding-left: 28px;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--blue-dim), transparent);
+}
+.timeline-item {
+  position: relative;
+  padding: 6px 0 18px 18px;
+}
+.timeline-item:last-child { padding-bottom: 0; }
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -19px;
+  top: 9px;
+  width: 10px;
+  height: 10px;
+  background: var(--blue-dim);
+  border: 2px solid var(--blue);
+  border-radius: 50%;
+}
+.timeline-date {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--blue);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.timeline-event {
+  font-size: 13.5px;
+  color: var(--text2);
+  line-height: 1.55;
+}
+.key-paper-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.key-paper-card:last-child { border-bottom: none; padding-bottom: 0; }
+.key-paper-score {
+  flex-shrink: 0;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  border: 2px solid;
+}
+.key-paper-info { flex: 1; min-width: 0; }
+.key-paper-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+.key-paper-title a { color: var(--text); }
+.key-paper-title a:hover { color: var(--blue); }
+.key-paper-meta {
+  font-size: 11px;
+  color: var(--text3);
+}
+.related-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  text-decoration: none;
+  transition: all 0.15s;
+  margin: 4px;
+}
+.related-chip:hover {
+  background: rgba(79,142,247,0.1);
+  border-color: rgba(79,142,247,0.3);
+  color: var(--blue);
+  text-decoration: none;
+}
+{% endblock %}
+
+{% block breadcrumb %}
+<span>›</span>
+<a href="/directions" style="color: var(--text3);">Directions</a>
+<span>›</span>
+<span style="color: var(--text2);">{{ direction.name | truncate_text(30) }}</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ─── Header ─────────────────────────────────────────────────────────────── -->
+<div style="display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;">
+  <div style="flex: 1; min-width: 200px;">
+    <div class="direction-detail-title">{{ direction.name }}</div>
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <div class="status-badge status-{{ direction.status }}">
+        {% if direction.status == 'emerging' %}🌱{% elif direction.status == 'stable' %}⚖{% elif direction.status == 'declining' %}📉{% else %}☠{% endif %}
+        {{ direction.status | title }}
+      </div>
+      {% if direction.analyzed_at %}
+      <span style="font-size: 12px; color: var(--text3);">
+        Analyzed {{ direction.analyzed_at.strftime('%b %-d, %Y') if direction.analyzed_at else '' }}
+      </span>
+      {% endif %}
+      <span style="font-size: 12px; color: var(--text3);">{{ paper_count }} papers in database</span>
+    </div>
+  </div>
+  <a href="/directions" class="btn btn-secondary btn-sm">← All Directions</a>
+</div>
+
+<!-- ─── Two-column layout ──────────────────────────────────────────────────── -->
+<div style="display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start;">
+<div>
+
+  <!-- Worthiness score -->
+  {% set s_color = direction.status | status_color %}
+  {% set r = 36 %}
+  {% set circumference = 2 * 3.14159 * r %}
+  {% set pct = direction.worthiness_score / 10.0 %}
+  {% set offset = circumference * (1 - pct) %}
+
+  <div class="worthiness-large">
+    <div class="worthiness-ring-lg">
+      <svg viewBox="0 0 90 90">
+        <circle fill="none" stroke="var(--border)" stroke-width="6" cx="45" cy="45" r="{{ r }}" />
+        <circle fill="none"
+                stroke="{{ s_color }}"
+                stroke-width="6"
+                stroke-linecap="round"
+                cx="45" cy="45" r="{{ r }}"
+                stroke-dasharray="{{ circumference }}"
+                stroke-dashoffset="{{ offset }}" />
+      </svg>
+      <div class="worthiness-ring-lg-text">
+        <span class="worthiness-score-big" style="color: {{ s_color }};">{{ "%.1f" | format(direction.worthiness_score) }}</span>
+        <span class="worthiness-label-sm">/ 10</span>
+      </div>
+    </div>
+    <div class="worthiness-reasoning">
+      {% if direction.worthiness_reasoning %}
+        {{ direction.worthiness_reasoning }}
+      {% else %}
+        <span style="font-style: italic; color: var(--text3);">No worthiness reasoning available.</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Overview -->
+  {% if direction.overview %}
+  <div class="detail-panel">
+    <div class="detail-panel-title">📖 Overview</div>
+    <div style="font-size: 14.5px; color: var(--text2); line-height: 1.8;">
+      {{ direction.overview | nl2br }}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Open Problems -->
+  {% if direction.open_problems %}
+  <div class="detail-panel">
+    <div class="detail-panel-title">🧩 Open Problems</div>
+    <ol class="open-problems-list">
+      {% for problem in direction.open_problems %}
+      <li>{{ problem }}</li>
+      {% endfor %}
+    </ol>
+  </div>
+  {% endif %}
+
+  <!-- Key Papers -->
+  {% if key_papers %}
+  <div class="detail-panel">
+    <div class="detail-panel-title">📄 Key Papers</div>
+    {% for paper in key_papers %}
+    {% set sc = paper.overall_score %}
+    <div class="key-paper-card">
+      <div class="key-paper-score" style="color: {{ sc | score_color }}; border-color: {{ sc | score_color }}; background: {{ sc | score_bg }};">
+        {{ "%.1f" | format(sc) }}
+      </div>
+      <div class="key-paper-info">
+        <div class="key-paper-title">
+          <a href="/papers/{{ paper.id }}" title="{{ paper.title }}">{{ paper.title | truncate_text(100) }}</a>
+        </div>
+        <div class="key-paper-meta">
+          {% if paper.authors %}{{ paper.authors[:2] | join(', ') }}{% if paper.authors | length > 2 %} et al.{% endif %}{% endif %}
+          {% if paper.published_date %}&nbsp;·&nbsp;{{ paper.published_date | fmt_date }}{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    <div style="margin-top: 14px;">
+      <a href="/papers?q={{ direction.name }}" class="btn btn-secondary btn-sm">View all papers in this direction →</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Milestones timeline -->
+  {% if direction.milestones %}
+  <div class="detail-panel">
+    <div class="detail-panel-title">🗓 Milestones</div>
+    <div class="timeline">
+      {% for milestone in direction.milestones %}
+      <div class="timeline-item">
+        <div class="timeline-date">{{ milestone.date }}</div>
+        <div class="timeline-event">{{ milestone.event }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Right sidebar -->
+<div>
+
+  <!-- Key Authors -->
+  {% if direction.key_authors %}
+  <div class="detail-panel">
+    <div class="detail-panel-title">👤 Key Authors</div>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      {% for author in direction.key_authors %}
+      <a href="/professors?q={{ author }}" style="
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 7px 0;
+        border-bottom: 1px solid var(--border);
+        color: var(--text2);
+        font-size: 13px;
+        text-decoration: none;
+      ">
+        <span style="width: 28px; height: 28px; background: var(--surface2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; color: var(--text3);">
+          {{ author[0] | upper if author else '?' }}
+        </span>
+        <span>{{ author }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Aliases -->
+  {% if direction.aliases %}
+  <div class="detail-panel">
+    <div class="detail-panel-title">🏷 Aliases</div>
+    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+      {% for alias in direction.aliases %}
+      <span class="tag tag-direction">{{ alias }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Related Directions -->
+  {% if direction.related_directions %}
+  <div class="detail-panel">
+    <div class="detail-panel-title">🔗 Related Directions</div>
+    <div style="margin: -4px;">
+      {% for related in direction.related_directions %}
+      <a href="/directions/{{ related }}" class="related-chip">{{ related }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Stats -->
+  <div class="detail-panel">
+    <div class="detail-panel-title">📊 Stats</div>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      {% set items = [
+        ('Papers', paper_count),
+        ('Open Problems', direction.open_problems | length),
+        ('Key Authors', direction.key_authors | length),
+        ('Milestones', direction.milestones | length),
+        ('Related Directions', direction.related_directions | length),
+      ] %}
+      {% for label, val in items %}
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 13px; color: var(--text2);">{{ label }}</span>
+        <span style="font-size: 15px; font-weight: 700; color: var(--text);">{{ val }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+</div>
+
+{% endblock %}

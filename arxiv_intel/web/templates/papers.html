@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Papers{% endblock %}
+
+{% block extra_styles %}
+.papers-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+@media (max-width: 900px) {
+  .papers-grid { grid-template-columns: 1fr; }
+}
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text2);
+}
+.filter-item label { font-weight: 500; white-space: nowrap; }
+.score-range-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--blue);
+  min-width: 28px;
+}
+.results-meta {
+  font-size: 13px;
+  color: var(--text3);
+  margin-bottom: 14px;
+}
+.results-meta strong { color: var(--text2); }
+.paper-links {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.paper-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  background: var(--surface2);
+  transition: all 0.15s;
+}
+.paper-link-btn:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+  text-decoration: none;
+}
+{% endblock %}
+
+{% block breadcrumb %}<span>›</span> Papers{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Paper Browser</h1>
+  <div class="page-subtitle">Search and explore {{ total }} papers in the database</div>
+</div>
+
+<!-- ─── Search + Filters ───────────────────────────────────────────────────── -->
+<form method="get" action="/papers" id="search-form">
+  <div class="search-bar">
+    <span class="search-bar-icon">🔍</span>
+    <input
+      type="text"
+      name="q"
+      value="{{ query }}"
+      placeholder="Search by title, abstract, authors…"
+      autocomplete="off"
+    />
+    <button type="submit">Search</button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-item">
+      <label for="min_score">Min Score:</label>
+      <input
+        type="range"
+        id="min_score"
+        name="min_score"
+        min="0" max="10" step="0.5"
+        value="{{ min_score }}"
+        style="width: 120px;"
+        oninput="document.getElementById('score-val').textContent = parseFloat(this.value).toFixed(1)"
+      />
+      <span class="score-range-value" id="score-val">{{ "%.1f" | format(min_score) }}</span>
+    </div>
+
+    <div style="margin-left: auto; display: flex; gap: 8px;">
+      <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+      <a href="/papers" class="btn btn-secondary btn-sm">Reset</a>
+    </div>
+  </div>
+
+  <input type="hidden" name="page" value="1" />
+</form>
+
+<!-- ─── Results meta ───────────────────────────────────────────────────────── -->
+<div class="results-meta">
+  {% if query %}
+    Showing <strong>{{ papers | length }}</strong> results for "<strong>{{ query }}</strong>"
+    (page {{ page }} of {{ total_pages }}, {{ total }} total)
+  {% else %}
+    Showing <strong>{{ papers | length }}</strong> papers
+    (page {{ page }} of {{ total_pages }}, {{ total }} total)
+  {% endif %}
+</div>
+
+<!-- ─── Paper cards grid ───────────────────────────────────────────────────── -->
+{% if papers %}
+<div class="papers-grid">
+  {% for paper in papers %}
+  {% set sc = paper.overall_score %}
+  <div class="paper-card" style="margin-bottom: 0;">
+    <div class="paper-card-header">
+      <div class="score-badge" style="color: {{ sc | score_color }}; border-color: {{ sc | score_color }}; background: {{ sc | score_bg }};">
+        {{ "%.1f" | format(sc) }}
+      </div>
+      <div class="paper-meta">
+        <div class="paper-title">
+          <a href="/papers/{{ paper.id }}" title="{{ paper.title }}">{{ paper.title | truncate_text(100) }}</a>
+        </div>
+        <div class="paper-authors">
+          {% for author in paper.authors[:3] %}
+            <a href="/professors?q={{ author }}">{{ author }}</a>{% if not loop.last %},&nbsp;{% endif %}
+          {% endfor %}
+          {% if paper.authors | length > 3 %}<span style="color: var(--text3);"> +{{ paper.authors | length - 3 }}</span>{% endif %}
+          {% if paper.published_date %}&nbsp;·&nbsp;<span style="color: var(--text3);">{{ paper.published_date | fmt_date }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% if paper.method_name %}
+    <div class="method-badge" style="margin-top: 2px;">⬡ {{ paper.method_name }}</div>
+    {% endif %}
+
+    {% if paper.summary %}
+    <div class="paper-summary">{{ paper.summary | truncate_text(160) }}</div>
+    {% endif %}
+
+    <div class="paper-tags">
+      {% for d in paper.directions[:3] %}
+      <a href="/directions/{{ d }}" class="tag tag-direction">{{ d }}</a>
+      {% endfor %}
+      {% if paper.is_breakthrough %}<span class="tag tag-gold">⚡</span>{% endif %}
+      {% if paper.has_code %}<span class="tag tag-code">⌥ Code</span>{% endif %}
+    </div>
+
+    <div class="paper-links">
+      <a href="/papers/{{ paper.id }}" class="paper-link-btn">🔍 Detail</a>
+      {% if paper.url %}
+      <a href="{{ paper.url }}" target="_blank" rel="noopener" class="paper-link-btn">arXiv ↗</a>
+      {% endif %}
+      {% if paper.pdf_url %}
+      <a href="{{ paper.pdf_url }}" target="_blank" rel="noopener" class="paper-link-btn">PDF ↗</a>
+      {% endif %}
+      {% if paper.has_code and paper.code_url %}
+      <a href="{{ paper.code_url }}" target="_blank" rel="noopener" class="paper-link-btn" style="color: var(--green); border-color: rgba(76,175,130,0.3);">⌥ Code ↗</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ─── Pagination ─────────────────────────────────────────────────────────── -->
+<div class="pagination">
+  {% if page > 1 %}
+  <a href="/papers?q={{ query }}&min_score={{ min_score }}&page={{ page - 1 }}" class="page-btn">‹</a>
+  {% else %}
+  <span class="page-btn disabled">‹</span>
+  {% endif %}
+
+  {% for p in range([1, page - 2] | max, [total_pages + 1, page + 3] | min) %}
+  <a href="/papers?q={{ query }}&min_score={{ min_score }}&page={{ p }}"
+     class="page-btn {% if p == page %}active{% endif %}">{{ p }}</a>
+  {% endfor %}
+
+  {% if page < total_pages %}
+  <a href="/papers?q={{ query }}&min_score={{ min_score }}&page={{ page + 1 }}" class="page-btn">›</a>
+  {% else %}
+  <span class="page-btn disabled">›</span>
+  {% endif %}
+
+  <span class="page-info">{{ page }} / {{ total_pages }}</span>
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-state-icon">🔍</div>
+  <div class="empty-state-title">No papers found</div>
+  <div class="empty-state-text">
+    {% if query %}
+      No results for "<strong>{{ query }}</strong>". Try a different search term or lower the minimum score.
+    {% else %}
+      No papers in the database yet. Run the arxiv fetcher to populate it.
+    {% endif %}
+  </div>
+  {% if query %}
+  <a href="/papers" class="btn btn-secondary" style="margin-top: 16px;">Clear search</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

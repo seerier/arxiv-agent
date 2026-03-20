@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}Directions{% endblock %}
+
+{% block extra_styles %}
+.filter-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  width: fit-content;
+}
+.filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: calc(var(--radius-sm) - 2px);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--text2);
+  transition: all 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.filter-tab:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
+.filter-tab.active { background: var(--blue); color: #fff; }
+.filter-tab.active.emerging { background: var(--green); }
+.filter-tab.active.stable { background: var(--blue); }
+.filter-tab.active.declining { background: var(--gold); color: #0F1117; }
+.filter-tab.active.dead { background: var(--red); }
+
+.directions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media (max-width: 1100px) { .directions-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 680px)  { .directions-grid { grid-template-columns: 1fr; } }
+
+.direction-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.2s, transform 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.direction-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+.direction-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 2px;
+  background: var(--card-accent, var(--blue-dim));
+}
+
+.direction-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.direction-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+  flex: 1;
+}
+
+.worthiness-ring {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  position: relative;
+}
+
+.worthiness-ring svg {
+  width: 52px;
+  height: 52px;
+  transform: rotate(-90deg);
+}
+
+.worthiness-ring-bg { fill: none; stroke: var(--border); stroke-width: 4; }
+.worthiness-ring-fill { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+
+.worthiness-ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.direction-excerpt {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.6;
+  flex: 1;
+}
+
+.direction-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.dir-paper-count {
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.dir-paper-count strong {
+  color: var(--text2);
+  font-weight: 700;
+}
+
+.explore-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  transition: all 0.15s;
+}
+.explore-btn:hover {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+  text-decoration: none;
+}
+{% endblock %}
+
+{% block breadcrumb %}<span>›</span> Directions{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Research Directions</h1>
+  <div class="page-subtitle">{{ directions | length }} directions tracked across all research areas</div>
+</div>
+
+<!-- ─── Filter tabs ────────────────────────────────────────────────────────── -->
+<div class="filter-tabs">
+  <a href="/directions" class="filter-tab {% if status_filter == 'all' or not status_filter %}active{% endif %}">
+    All <span style="opacity: 0.7;">({{ directions | length }})</span>
+  </a>
+  <a href="/directions?status_filter=emerging" class="filter-tab emerging {% if status_filter == 'emerging' %}active{% endif %}">
+    🌱 Emerging
+  </a>
+  <a href="/directions?status_filter=stable" class="filter-tab stable {% if status_filter == 'stable' %}active{% endif %}">
+    ⚖ Stable
+  </a>
+  <a href="/directions?status_filter=declining" class="filter-tab declining {% if status_filter == 'declining' %}active{% endif %}">
+    📉 Declining
+  </a>
+  <a href="/directions?status_filter=dead" class="filter-tab dead {% if status_filter == 'dead' %}active{% endif %}">
+    ☠ Dead
+  </a>
+</div>
+
+<!-- ─── Direction cards ────────────────────────────────────────────────────── -->
+{% if directions %}
+<div class="directions-grid">
+  {% for d in directions %}
+  {% set r = 22 %}
+  {% set circumference = 2 * 3.14159 * r %}
+  {% set pct = (d.worthiness_score / 10.0) %}
+  {% set offset = circumference * (1 - pct) %}
+  {% set s_color = d.status | status_color %}
+
+  <div class="direction-card" style="--card-accent: {{ s_color }};">
+    <div class="direction-card-header">
+      <div>
+        <div class="direction-name">{{ d.name }}</div>
+        <div class="status-badge status-{{ d.status }}" style="margin-top: 6px;">
+          {% if d.status == 'emerging' %}🌱{% elif d.status == 'stable' %}⚖{% elif d.status == 'declining' %}📉{% else %}☠{% endif %}
+          {{ d.status | title }}
+        </div>
+      </div>
+
+      <div class="worthiness-ring">
+        <svg viewBox="0 0 52 52">
+          <circle class="worthiness-ring-bg" cx="26" cy="26" r="{{ r }}" />
+          <circle class="worthiness-ring-fill"
+                  cx="26" cy="26" r="{{ r }}"
+                  stroke="{{ s_color }}"
+                  stroke-dasharray="{{ circumference }}"
+                  stroke-dashoffset="{{ offset }}" />
+        </svg>
+        <div class="worthiness-ring-text" style="color: {{ s_color }};">{{ "%.0f" | format(d.worthiness_score) }}</div>
+      </div>
+    </div>
+
+    {% if d.overview %}
+    <div class="direction-excerpt">{{ d.overview | truncate_text(150) }}</div>
+    {% else %}
+    <div class="direction-excerpt" style="font-style: italic; color: var(--text3);">No overview available.</div>
+    {% endif %}
+
+    <div class="direction-card-footer">
+      <div class="dir-paper-count">
+        <strong>{{ dir_counts.get(d.name, 0) }}</strong> papers
+        &nbsp;·&nbsp; {{ d.open_problems | length }} open problems
+      </div>
+      <a href="/directions/{{ d.name }}" class="explore-btn">Explore →</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-state-icon">🧭</div>
+  <div class="empty-state-title">No directions found</div>
+  <div class="empty-state-text">
+    {% if status_filter and status_filter != 'all' %}
+      No {{ status_filter }} directions in the database.
+      <a href="/directions">View all directions</a>
+    {% else %}
+      Run the knowledge analyzer to populate research directions.
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

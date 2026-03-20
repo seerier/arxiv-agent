@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block title %}Professors{% endblock %}
+
+{% block extra_styles %}
+.professors-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media (max-width: 1100px) { .professors-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 680px)  { .professors-grid { grid-template-columns: 1fr; } }
+
+.professor-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.professor-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+.professor-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.prof-avatar {
+  width: 52px; height: 52px;
+  background: linear-gradient(135deg, var(--blue-dim), var(--surface2));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--blue);
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+}
+.prof-info { flex: 1; min-width: 0; }
+.prof-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.prof-institution {
+  font-size: 12px;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prof-metrics {
+  display: flex;
+  gap: 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.prof-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.prof-metric-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.prof-metric-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+}
+.prof-focus-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.prof-focus-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  background: rgba(79,142,247,0.08);
+  border: 1px solid rgba(79,142,247,0.2);
+  border-radius: 100px;
+  font-size: 10.5px;
+  color: var(--blue);
+  font-weight: 500;
+}
+.prof-bio {
+  font-size: 12.5px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+.prof-card-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.prof-papers-count {
+  font-size: 12px;
+  color: var(--text3);
+}
+.prof-papers-count strong {
+  color: var(--text2);
+}
+.prof-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  transition: all 0.15s;
+}
+.prof-view-btn:hover {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+  text-decoration: none;
+}
+{% endblock %}
+
+{% block breadcrumb %}<span>›</span> Professors{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Researchers & Professors</h1>
+  <div class="page-subtitle">{{ professors | length }} researchers tracked in the database</div>
+</div>
+
+<!-- ─── Search ────────────────────────────────────────────────────────────── -->
+<form method="get" action="/professors">
+  <div class="search-bar">
+    <span class="search-bar-icon">🔍</span>
+    <input
+      type="text"
+      name="q"
+      value="{{ query }}"
+      placeholder="Search by name, institution…"
+      autocomplete="off"
+    />
+    <button type="submit">Search</button>
+  </div>
+</form>
+
+{% if query %}
+<div style="font-size: 13px; color: var(--text3); margin-bottom: 16px;">
+  {{ professors | length }} result{{ 's' if professors | length != 1 else '' }} for "<strong style="color: var(--text2);">{{ query }}</strong>"
+  · <a href="/professors">Clear</a>
+</div>
+{% endif %}
+
+<!-- ─── Professor cards ───────────────────────────────────────────────────── -->
+{% if professors %}
+<div class="professors-grid">
+  {% for prof in professors %}
+  <div class="professor-card">
+    <div class="professor-card-header">
+      <div class="prof-avatar">
+        {{ prof.name[0] | upper if prof.name else '?' }}
+      </div>
+      <div class="prof-info">
+        <div class="prof-name">{{ prof.name }}</div>
+        {% if prof.institution %}
+        <div class="prof-institution" title="{{ prof.institution }}">{{ prof.institution }}</div>
+        {% endif %}
+        {% if prof.email %}
+        <div style="font-size: 11px; color: var(--text3); margin-top: 2px;">
+          <a href="mailto:{{ prof.email }}" style="color: var(--text3);">{{ prof.email }}</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="prof-metrics">
+      <div class="prof-metric">
+        <div class="prof-metric-value" style="color: var(--blue);">{{ prof.h_index if prof.h_index else '—' }}</div>
+        <div class="prof-metric-label">h-index</div>
+      </div>
+      <div class="prof-metric">
+        <div class="prof-metric-value">
+          {% if prof.citation_count >= 1000 %}
+            {{ "%.1f" | format(prof.citation_count / 1000) }}k
+          {% else %}
+            {{ prof.citation_count if prof.citation_count else '—' }}
+          {% endif %}
+        </div>
+        <div class="prof-metric-label">Citations</div>
+      </div>
+      <div class="prof-metric">
+        <div class="prof-metric-value" style="color: var(--green);">{{ prof.top_papers | length }}</div>
+        <div class="prof-metric-label">Top Papers</div>
+      </div>
+    </div>
+
+    <!-- Research focus -->
+    {% if prof.research_focus %}
+    <div class="prof-focus-chips">
+      {% for focus in prof.research_focus[:5] %}
+      <span class="prof-focus-chip">{{ focus }}</span>
+      {% endfor %}
+      {% if prof.research_focus | length > 5 %}
+      <span class="prof-focus-chip" style="color: var(--text3); background: transparent;">+{{ prof.research_focus | length - 5 }}</span>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Bio -->
+    {% if prof.bio %}
+    <div class="prof-bio">{{ prof.bio | truncate_text(120) }}</div>
+    {% endif %}
+
+    <div class="prof-card-footer">
+      <div class="prof-papers-count">
+        <strong>{{ prof.top_papers | length }}</strong> top papers
+      </div>
+      <div style="display: flex; gap: 8px;">
+        {% if prof.homepage %}
+        <a href="{{ prof.homepage }}" target="_blank" rel="noopener" class="prof-view-btn" title="Homepage">
+          🌐
+        </a>
+        {% endif %}
+        <a href="/papers?q={{ prof.name }}" class="prof-view-btn">
+          View Papers →
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-state-icon">👤</div>
+  <div class="empty-state-title">No professors found</div>
+  <div class="empty-state-text">
+    {% if query %}
+      No results for "<strong>{{ query }}</strong>".
+      <a href="/professors">View all professors</a>
+    {% else %}
+      Run the knowledge analyzer to populate professor profiles.
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
